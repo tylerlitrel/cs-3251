@@ -1,0 +1,8 @@
+does server also need a caching function since we are creating bidirectional
+
+I'm thinking we may need to create an RTP object that stores expected numbers and whatnot
+	but i might just be stuck in an OOP mentality. That's what I started.
+	
+I'm trying to prevent duplication by putting everything in the RTP object: linked list for caching,
+current sequence number, etc.
+
