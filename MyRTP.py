@@ -4,7 +4,6 @@ import hashlib
 import random
 
 class MyRTP:
-
 	# This is for caching out-of-order packets
 	recvCache = []
 	# This stores packets we have not received an Ack for
@@ -15,22 +14,24 @@ class MyRTP:
 	expectedSeq = -1
 	# This is the file that we will write data to
 	fileName = ""
+	# This says whether we can accept connections
+	canListen = False
 	# This is default packet length in bytes. It can be changed
-	packetLength = 65535
+	maxPacketLength = 65535
 	# This is the default window size
-	windowSize = 1024
+	maxWindowSize = 1024
     # This is the UDP socket that we will use underneath our RTP protocol
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
-    headerFlags = bytearray.fromhex('80 40 20 10 50 90 30')
+    headerFlags = bytearray.fromhex('80 40 20 10 50 C0 60')
 		
 	# this will set the window size
-	def setWindowSize(newWindowSize):
-		windowSize = newWindowSize
+	def setMaxWindowSize(newWindowSize):
+		maxWindowSize = newWindowSize
 		
 	# this will set the packet length
-	def setPacketLength(newPacketLength):
-		packetLength = newPacketLength
+	def setMaxPacketLength(newPacketLength):
+		maxPacketLength = newPacketLength
 	
 	# This will set the file name we will write to
 	def setFileName(newFileName):
@@ -38,17 +39,43 @@ class MyRTP:
 		
 	# This method is used in order to create a socket
 	def createRTPSocket():
-		udp stuff
-		# Return an RTP socket
-		return socket
-
+		udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		
 	# This method associates a port on the machine with the socket
 	def bindRTPSocket(address):
 		# Extract the IP address and the port number from the address tuple
 		ipAddress = address[0]
 		portNumber = address[1]
+	
+	def formPacket(sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
+		outgoingPacket = bytearray()
+		for eachByte in sourcePort.to_bytes(2, byteorder = 'big'):
+			outgoingpacket.append(eachByte)
+		for eachByte in destinationPort.to_bytes(2, byteorder = 'big'):
+			outgoingPacket.append(eachByte)
+		for eachByte in seqNum.to_bytes(4, byteorder = 'big'):
+			outgoingPacket.append(eachByte)
+		for eachByte in ackNum.to_bytes(4, byteorder = 'big'):
+			outgoingPacket.append(eachByte)
+		for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
+			outgoingPacket.append(eachByte)
+		for eachByte in windowSize.to_bytes(4, byteorder = 'big'):
+			outgoingPacket.append(eachByte)
+		for eachByte in lengthOfPacket.to_bytes(4, byteorder = 'big'):
+			outgoingPacket.append(eachByte)
+		outgoingPacket.append(flagByte)
+		for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
+			outgoingPacket.append(eachByte)
+		for eachByte in payload:
+			outgoingPacket.append(eachByte)
 
-		
+		# Calculate the checksum and insert it into the packet
+		checksum = calculateChecksum(outgoingPacket)
+		index = 12
+		for eachByte in checksum:
+		   outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
+		   index++
+		return outgoingPacket
 	# This function is used to create a socket by the server to communicate with a specific client
 	def acceptRTPConnection():
 		'''
@@ -63,11 +90,13 @@ class MyRTP:
 			this wil return a socket up in this shiznit
 			if it is not correct then we go back to the top in some fashion
         '''
+		if !canListen:
+			return
         # Use a blocking UDP call to wait for a SYN packet to arrive
-        incomingMessage, incomingAddress = udpSocket.recvfrom_into(packetLength)
-
+		incomingMessage = bytearray()
+        packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
         # If the packet was a SYN packet, generate a random number for the CHALLENGE+ACK reply
-        randomInt = random.randint(1, 2056)
+        randomInt = random.randint(1, 4096)
 
         # Check to see if the packet is a SYN packet (indicated in 29th byte of header)
         if(incomingMessage[29] == headerFlags[0] and checkSumOkay(incomingMessage)):
@@ -85,33 +114,8 @@ class MyRTP:
             outgoingPacketLength = 32 + 4
 
             # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = bytearray()
-            for eachByte in outgoingSourcePort.to_bytes(2, byteorder = 'big'):
-                outgoingpacket.append(eachByte)
-            for eachByte in outgoingDestinationPort.to_bytes(2, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingSeqNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingAckNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingWindow.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingLength.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            outgoingPacket.append(headerFlags[4])
-            for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-                outgoingPacket.append(eachByte)
-            for eachByte in randomInt.to_bytes(4, byteorder = 'big')
-                outgoingPacket.append(eachByte)
-
-            # Calculate the checksum and insert it into the packet
-            checksum = calculateChecksum(outgoingPacket)
-            index = 12
-            for eachByte in checksum:
-               outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-               index++
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -120,7 +124,8 @@ class MyRTP:
             return
 
         # Use a blocking UDP call to wait for the answer to come back
-        incomingMessage2, incomingAddress2 = udpSocket.recvfrom_into(packetLength)
+		incomingMessage2 = bytearray()
+        packetLength, incomingAddress2 = udpSocket.recvfrom_into(incomingMessage2)
         udpSocket.settimeout(5)
         if incomingAddress2 == incomingAddress and int.from_bytes(incomingMessage2[33:37], byteorder = 'big') == randomInt:
             # We received the correct answer to the challenge
@@ -138,32 +143,8 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire SYN+ACK packet
-            outgoingPacket = bytearray()
-            for eachByte in outgoingSourcePort.to_bytes(2, byteorder = 'big'):
-                outgoingpacket.append(eachByte)
-            for eachByte in outgoingDestinationPort.to_bytes(2, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingSeqNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingAckNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingWindow.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingLength.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            outgoingPacket.append(headerFlags[5])
-            for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-                outgoingPacket.append(eachByte)
-
-            # Calculate the checksum and insert it into the packet
-            checksum = calculateChecksum(outgoingPacket)
-            index = 12
-            for eachByte in checksum:
-               outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-               index++
-
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[5], bytearray())
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
@@ -187,31 +168,8 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire ACK packet
-            outgoingPacket = bytearray()
-            for eachByte in outgoingSourcePort.to_bytes(2, byteorder = 'big'):
-                outgoingpacket.append(eachByte)
-            for eachByte in outgoingDestinationPort.to_bytes(2, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingSeqNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingAckNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingWindow.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingLength.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            outgoingPacket.append(headerFlags[1])
-            for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-                outgoingPacket.append(eachByte)
-
-            # Calculate the checksum and insert it into the packet
-            checksum = calculateChecksum(outgoingPacket)
-            index = 12
-            for eachByte in checksum:
-               outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-               index++
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -223,18 +181,19 @@ class MyRTP:
         return clientSocket
 
 	# This function is used to receive data
-	def receiveRTP(numBytes):
+	def receiveRTP(packetLength):
 		#handle lost, out of order, and corrupt packets
-		
-		we do shit here with UDP to extract our packet
-		call recieve with a udp packet and then manipulating
-		the data which will be our packet below
-		
 		#sequence number should be somewhere
-		if !checkSumOkay(this):
+		myArray = bytearray()
+		udpSocket.recvfrom_into(myArray)
+		if !checkSumOkay(myArray):
 			return
-		addToCache(this)
-		sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
+		#closing stuff
+		if myArray[28] == headerFlags[2]:
+			startClosing
+			
+		#addToCache(this)
+		#sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
 		if expectedSeq == sequenceNumberHere:
 			#writeOutputfromcache will update the current sequence number
 			#and be based on the last packet in the cache
@@ -277,8 +236,7 @@ class MyRTP:
 	
 	# This function allows the socket to begin listening for connection requests
 	def listenRTP():
-		#simple...
-		boolean that says we can accept things
+		canListen = True
 
 
 	# This function connects to the specified IP address and port
@@ -302,31 +260,8 @@ class MyRTP:
 
         # First, send a SYN packet to the server
         # Form the entire SYN packet
-        outgoingPacket = bytearray()
-        for eachByte in outgoingSourcePort.to_bytes(2, byteorder = 'big'):
-            outgoingpacket.append(eachByte)
-        for eachByte in outgoingDestinationPort.to_bytes(2, byteorder = 'big'):
-            outgoingPacket.append(eachByte)
-        for eachByte in (0).to_bytes(4, byteorder = 'big'): #sequence number
-            outgoingPacket.append(eachByte)
-        for eachByte in (0).to_bytes(4, byteorder = 'big'): #ack number
-            outgoingPacket.append(eachByte)
-        for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-            outgoingPacket.append(eachByte)
-        for eachByte in outgoingWindow.to_bytes(4, byteorder = 'big'):
-            outgoingPacket.append(eachByte)
-        for eachByte in (32).to_bytes(4, byteorder = 'big'): #length
-            outgoingPacket.append(eachByte)
-        outgoingPacket.append(headerFlags[0])
-        for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-            outgoingPacket.append(eachByte)
-
-        # Calculate the checksum and insert it into the packet
-        checksum = calculateChecksum(outgoingPacket)
-        index = 12
-        for eachByte in checksum:
-           outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-           index++
+        outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  0,  
+			0, maxWindowSize,  32, headerFlags[0], bytearray())
 
         # Send the SYN packet
         udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -351,33 +286,8 @@ class MyRTP:
             outgoingPacketLength = 32 + 4
 
             # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = bytearray()
-            for eachByte in outgoingSourcePort.to_bytes(2, byteorder = 'big'):
-                outgoingpacket.append(eachByte)
-            for eachByte in outgoingDestinationPort.to_bytes(2, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingSeqNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingAckNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingWindow.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingLength.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            outgoingPacket.append(headerFlags[1])
-            for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-                outgoingPacket.append(eachByte)
-            for eachByte in incomingChallengeNumber.to_bytes(4, byteorder = 'big')
-                outgoingPacket.append(eachByte)
-
-            # Calculate the checksum and insert it into the packet
-            checksum = calculateChecksum(outgoingPacket)
-            index = 12
-            for eachByte in checksum:
-               outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-               index++
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -404,32 +314,9 @@ class MyRTP:
             outgoingDestinationPort = incomingSourcePort
             outgoingPacketLength = 32
 
-            # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = bytearray()
-            for eachByte in outgoingSourcePort.to_bytes(2, byteorder = 'big'):
-                outgoingpacket.append(eachByte)
-            for eachByte in outgoingDestinationPort.to_bytes(2, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingSeqNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingAckNumber.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingWindow.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            for eachByte in outgoingLength.to_bytes(4, byteorder = 'big'):
-                outgoingPacket.append(eachByte)
-            outgoingPacket.append(headerFlags[1])
-            for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-                outgoingPacket.append(eachByte)
-
-            # Calculate the checksum and insert it into the packet
-            checksum = calculateChecksum(outgoingPacket)
-            index = 12
-            for eachByte in checksum:
-               outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-               index++
+            # Syn + Ack comment
+			outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
