@@ -23,10 +23,12 @@ class MyRTP:
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
     headerFlags = bytearray.fromhex('80 40 20 10 50 90 30')
-	
+		
+	# this will set the window size
 	def setWindowSize(newWindowSize):
 		windowSize = newWindowSize
 		
+	# this will set the packet length
 	def setPacketLength(newPacketLength):
 		packetLength = newPacketLength
 	
@@ -49,8 +51,7 @@ class MyRTP:
 		
 	# This function is used to create a socket by the server to communicate with a specific client
 	def acceptRTPConnection():
-		#simple...
-        '''
+		'''
 		this can only be called if listen has been called (remember that boolean)
 			udp block on receive - ie it is waitin to here a SYN
 			once it gets the syn it sends a challenge which is a randomly
@@ -240,18 +241,27 @@ class MyRTP:
 			sequenceNumber = writeOutputFromCache()			
 		acknowledge(this)
 
-	# This makes sure the checksum is okay
-	def checkSumOkay(byteArray):
-		index to the spot
-		fill it out with 0;s
-		store the given checksum
-		compare that to our checksum that we calculate here using sha256
-		return true or false
+	def calculateChecksum(packet):
+		emptyArray = bytearray(8)
+		myBytes = packet[0:12] 
+		for i in emptyArray:
+			myBytes.append(i)
+		for i in packet[20:]:
+			myBytes.append(i)
+		hasher = hashlib.sha256()
+		hasher.update(myBytes)
+		checksum = hasher.digest()
+		return checksum[0:64]	
 		
+	# This makes sure the checksum is okay
+	def checkSumOkay(packet):
+		checksum = packet[12:20]
+		ourChecksum = calculateChecksum(packet)
+		return (checksum == ourChecksum)		
 		
 	# Adds data to cache and ensures ascending order of sequence numbers
-	def addToCache(byteArray):
-		cache.append(byteArray)
+	def addToCache(packet):
+		cache.append(packet)
 		cache.sortBySequenceNumbers()
 		
 	# Writes output to appropriate file
