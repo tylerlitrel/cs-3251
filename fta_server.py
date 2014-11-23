@@ -14,9 +14,9 @@ windowSize = 100
 currentSegmentsOut = 0 # This field will be used to ensure the window size is not exceeded
 
 # Get the command line arguments when the fta-server.py script is run, and initialize the server
-clientPortNumber = sys.argv[1]
+clientPortNumber = int(sys.argv[1])
 netEmuIP = sys.argv[2]
-netEmuPort = sys.argv[3]
+netEmuPort = int(sys.argv[3])
 
 
 # This function will be used to initialize the server with the specified options
@@ -31,7 +31,7 @@ def initializeServer(netEmuPort, netEmuIP, portNumber):
     socket = MyRTP()
 
     # Bind the socket to a the local address
-    socket.bindRTPSocket(("127.0.0.1", serverPortNumber))
+    socket.bindRTPSocket("127.0.0.1", serverPortNumber)
 
     # Allow the socket to accept incoming connections
     socket.listenRTP()
