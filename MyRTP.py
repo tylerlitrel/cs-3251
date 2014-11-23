@@ -5,7 +5,12 @@ import random
 import socket
 def calculateChecksum( packet):
         emptyArray = bytearray(8)
-        myBytes = packet[0:12] 
+        myBytes = bytearray(12)
+        counter = 0
+        while counter < 12:
+            myBytes[counter] = packet[counter]
+            counter = counter + 1
+        #myBytes = packet[0:12] 
         for i in emptyArray:
             myBytes.append(i)
         for i in packet[20:]:
@@ -14,6 +19,12 @@ def calculateChecksum( packet):
         hasher.update(myBytes)
         checksum = hasher.digest()
         return checksum[0:8]   
+
+# This makes sure the checksum is okay
+def checkSumOkay(packet):
+    checksum = packet[12:20]
+    ourChecksum = calculateChecksum(packet)
+    return (checksum == ourChecksum) 
         
 class MyRTP:
     # This is for caching out-of-order packets
@@ -69,13 +80,7 @@ class MyRTP:
     def bindRTPSocket(self, address, portNum):
         # Extract the IP address and the port number from the address tuple
         ipAddress = address
-        portNumber = portNum
-
-    # This makes sure the checksum is okay
-    def checkSumOkay(self, packet):
-        checksum = packet[12:20]
-        ourChecksum = calculateChecksum(packet)
-        return (checksum == ourChecksum)  
+        portNumber = portNum 
     
     def formPacket(self, sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
         outgoingPacket = bytearray()
@@ -141,7 +146,7 @@ class MyRTP:
         randomInt = random.randint(1, 4096)
 
         # Check to see if the packet is a SYN packet (indicated in 28th byte of header)
-        if(incomingMessage[28] == headerFlags[0] and checkSumOkay(incomingMessage)):
+        if(incomingMessage[28] == self.headerFlags[0] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') # Sequence number from incoming packet
             globalSeqNumber = 0 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
@@ -153,8 +158,7 @@ class MyRTP:
             outgoingPacketLength = 32 + 4
 
             # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
-                goutgoingAckNumberlobalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
+            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber, globalAckNumber, self.maxWindowSize, outgoingPacketLength, self.headerFlags[4], randomInt.to_bytes(4, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
@@ -387,17 +391,18 @@ class MyRTP:
         incomingMessage = udpSocket.recv(self.maxPacketLength)
 
         # Check to see if the packet is a CHALLENGE+ACK packet (indicated in 28th byte of header)
-        if(incomingMessage[28] == headerFlags[4] and checkSumOkay(incomingMessage)):
+        if(incomingMessage[28] == self.headerFlags[4] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             globalAckNumber = globalAckNumber + 5
             globalSeqNumber = globalSeqNumber + 1 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            incomingChallengeNumber = int.from_bytes(incomingMessage[32:36], byteorder = 'big')
 
             # Modify the fields for the outgoing ACK packet
             outgoingPacketLength = 32 + 4
 
             # Form the entire ACK packet
-            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
-                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
+            outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], incomingChallengeNumber.to_bytes(4, byteorder = 'big'))
 
             # Send the ACK packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
