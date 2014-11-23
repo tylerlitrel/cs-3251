@@ -67,4 +67,3 @@ def terminateServer():
     global socket
     socket.closeRTPSocket()
 
-def 
