@@ -133,10 +133,10 @@ class MyRTP:
         if canListen is False:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
-        incomingMessage = bytearray()
         print('listening for connections')
-        packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+        incomingMessage = udpSocket.recv(self.maxPacketLength)
         print('got first packet')
+        print(incomingMessage)
         # If the packet was a SYN packet, generate a random number for the CHALLENGE+ACK reply
         randomInt = random.randint(1, 4096)
 
@@ -163,10 +163,9 @@ class MyRTP:
             return False
 
         # Use a blocking UDP call to wait for the answer to come back
-        incomingMessage2 = bytearray()
-        packetLength, incomingAddress2 = udpSocket.recvfrom_into(incomingMessage2)
+        incomingMessage2 = udpSocket.recv(self.maxPacketLength)
         udpSocket.settimeout(5)
-        if incomingAddress2 == incomingAddress and int.from_bytes(incomingMessage2[33:37], byteorder = 'big') == randomInt:
+        if int.from_bytes(incomingMessage2[33:37], byteorder = 'big') == randomInt:
             # We received the correct answer to the challenge
             # Retrieve the needed information from the incoming packet
             globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') # Sequence number from incoming packet
@@ -186,9 +185,9 @@ class MyRTP:
             return False
 
         # Use a blocking UDP call to wait for the ACK to come from the client
-        incomingMessage3, incomingAddress2 = udpSocket.recvfrom_into(packetLength)
+        incomingMessage3 = udpSocket.recv(self.maxPacketLength)
         udpSocket.settimeout(5)
-        if incomingAddress3 == incomingAddress and incomingMessage[28] == headerFlags[1]:
+        if incomingMessage3[28] == headerFlags[1]:
             '''
             # Retrieve the needed information from the incoming packet
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
@@ -221,8 +220,7 @@ class MyRTP:
     def receiveRTP(self, numberOfBytes):
         #handle lost, out of order, and corrupt packets
         #sequence number should be somewhere
-        incomingMessage = bytearray()
-        thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+        incomingMessage = udpSocket.recv(self.maxPacketLength)
             
         returnData = bytearray()
             
@@ -269,8 +267,7 @@ class MyRTP:
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
             
             # Wait for an ACK packet
-            incomingMessage = bytearray()
-            thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            incomingMessage = udpSocket.recv(self.maxPacketLength)
             if(incomingMessage[28] == headerFlags[1] and checkSumOkay(incomingMessage)):
                 udpSocket.close()
                 canListen = False
@@ -314,8 +311,7 @@ class MyRTP:
                         break
                     if(incomingMessage[28] == headerFlag[7]):
                         break
-                incomingMessage = bytearray()
-                thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+                incomingMessage = udpSocket.recv(self.maxPacketLength)
                 globalSeqNumber = globalSeqNumber + 1
                 globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') + int.from_bytes(incomingMessage[24:28], byteorder = 'big') - 32
             return returnData
@@ -383,12 +379,12 @@ class MyRTP:
             0, self.maxWindowSize,  32, self.headerFlags[0], bytearray())
 
         # Send the SYN packet
+        print(outgoingPacket)
         udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         print('sent first packet')
         
         # Use a blocking UDP call to wait for the CHALLENGE+ACK packet to come back
-        incomingMessage = bytearray()
-        packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+        incomingMessage = udpSocket.recv(self.maxPacketLength)
 
         # Check to see if the packet is a CHALLENGE+ACK packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[4] and checkSumOkay(incomingMessage)):
@@ -410,12 +406,11 @@ class MyRTP:
             return False
 
         # Use a blocking UDP call to wait for the SYN+ACK to come back
-        incomingMessage2 = bytearray()
-        packetLength, incomingAddress2 = udpSocket.recvfrom_into(incomingMessage2)
+        incomingMessage2 = udpSocket.recv(self.maxPacketLength)
         udpSocket.settimeout(5)
 
         # Check to see if the packet is a SYN+ACK packet (indicated in 28th byte of header)
-        if(incomingMessage[28] == headerFlags[5] and checkSumOkay(incomingMessage)):
+        if(incomingMessage2[28] == headerFlags[5] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             globalAckNumber = globalAckNumber + 1
             globalSeqNumber = globalSeqNumber + 5
@@ -490,15 +485,14 @@ class MyRTP:
         # Send the FIN packet
         udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         # Wait for the reply to the FIN
-        incomingMessage = bytearray()
-        packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+        incomingMessage = udpSocket.recv(self.maxPacketLength)
 
         # Check if the packet is an ACK
         if(incomingMessage[28] == headerFlags[1] and checkSumOkay(incomingMessage)):
             
             ## needs to wait for a fin to send an ack
             
-            packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            incomingMessage = udpSocket.recv(self.maxPacketLength)
             
             #hfs need some wort of while loop in case we get a non fin. also we need this in many other places possibly
             
@@ -554,8 +548,7 @@ class MyRTP:
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK
-            incomingMessage = bytearray()
-            packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            incomingMessage = udpSocket.recv(self.maxPacketLength)
             if(incomingMessage[28] == headerFlags[1] and checkSumOkay(incomingMessage)):
                 # Wait for a timeout period
                 time.sleep(5)
@@ -587,8 +580,7 @@ class MyRTP:
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK
-            incomingMessage = bytearray()
-            packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            incomingMessage = udpSocket.recv(self.maxPacketLength)
 
             # Wait for a timeout period
             time.sleep(5)

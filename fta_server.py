@@ -14,7 +14,7 @@ windowSize = 100
 currentSegmentsOut = 0 # This field will be used to ensure the window size is not exceeded
 
 # Get the command line arguments when the fta-server.py script is run, and initialize the server
-clientPortNumber = int(sys.argv[1])
+serverPortNumber = int(sys.argv[1])
 netEmuIP = sys.argv[2]
 netEmuPort = int(sys.argv[3])
 
@@ -48,7 +48,7 @@ def terminateServer():
     socket.closeRTPSocket()
 
     
-initializeServer(netEmuPort, netEmuIP, clientPortNumber)
+initializeServer(netEmuPort, netEmuIP, serverPortNumber)
 
 # Include some way to both check for the user input commands and checking for incoming connections
 
@@ -68,7 +68,10 @@ while True:
         print('Not a valid command')
 
     # Wait for a client to connect to the server
-    socket.acceptRTPConnection(clientPortNumber, netEmuIP, netEmuPort)
+    print(serverPortNumber)
+    print(netEmuIP)
+    print(netEmuPort)
+    socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
 
     # Once a client connects, wait for commands
     command = socket.receiveRTP(800000)
