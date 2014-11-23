@@ -74,7 +74,7 @@ class MyRTP:
         index = 12
         for eachByte in checksum:
            outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-           index++
+           index = index + 1
         return outgoingPacket
     # This function is used to create a socket by the server to communicate with a specific client
     def acceptRTPConnection():
@@ -90,7 +90,7 @@ class MyRTP:
             this wil return a socket up in this shiznit
             if it is not correct then we go back to the top in some fashion
         '''
-        if !canListen:
+        if canListen is False:
             return
         # Use a blocking UDP call to wait for a SYN packet to arrive
         incomingMessage = bytearray()
@@ -186,7 +186,7 @@ class MyRTP:
         #sequence number should be somewhere
         incomingMessage = bytearray()
         thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
-        if !checkSumOkay(myArray):
+        if checkSumOkay(myArray) is False:
             return
             
             
@@ -242,11 +242,11 @@ class MyRTP:
         
     #addToCache(this)
     #sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
-    if expectedSeq == sequenceNumberHere:
+    #if expectedSeq == sequenceNumberHere:
         #writeOutputfromcache will update the current sequence number
         #and be based on the last packet in the cache
-        sequenceNumber = writeOutputFromCache()         
-    acknowledge(this)
+    #    sequenceNumber = writeOutputFromCache()         
+    #acknowledge(this)
 
     def calculateChecksum(packet):
         emptyArray = bytearray(8)
@@ -374,12 +374,13 @@ class MyRTP:
 
     # This function will be used to send data
     def sendRTP(message):
+        '''
         #simple?
         loop through byte array
         divide the length by (packetsize*windowsize)
         while(sendCache is not empty and notallpackets are sent):
             s
-        
+        '''
         
         
         
@@ -500,4 +501,4 @@ class MyRTP:
             canListen = false
             udpSocket.close()
         
-need to create a packet object with sequence and raw data
+#need to create a packet object with sequence and raw data
