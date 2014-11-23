@@ -188,6 +188,9 @@ class MyRTP:
 		thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
 		if !checkSumOkay(myArray):
 			return
+			
+			
+			
 		#closing stuff
 		if myArray[28] == headerFlags[2]:
 			#send ack
@@ -207,14 +210,14 @@ class MyRTP:
 
 				# Form the entire packet
 				outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-					outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(randomInt, byteorder = 'big'))
+					outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
 
 				# Send the CHALLENGE+ACK packet
 				udpSocket.sendto(outgoingPacket, incomingAddress)
 			udpSocket.setTimeout(2)
 			
 			thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
-			
+			#send fin
 			incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
 			incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
 			incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
@@ -228,12 +231,20 @@ class MyRTP:
 
 			# Form the entire packet
 			outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(randomInt, byteorder = 'big'))
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], byteArray())
 
-			# Send the CHALLENGE+ACK packet
+			# Send the packet
 			udpSocket.sendto(outgoingPacket, incomingAddress)
 			
-			#send fin
+			
+			while(True):
+				udpSocket.setTimeout(2)
+				if(incomingMessage[29] == headerFlags[1] and checkSumOkay(incomingMessage)):
+					udpSocket.close()
+					canListen = False
+					break
+			
+			
 			#get ack. close socket
 			
 		#addToCache(this)
@@ -320,14 +331,13 @@ class MyRTP:
             incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
             incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
             incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
-            incomingChallengeNumber = int.from_bytes(incomingMessage[32:36], byteorder = 'big')
 
             # Modify the fields for the outgoing CHALLENGE+ACK packet
             outgoingSeqNumber = incomingAckNumber
             outgoingAckNumber = incomingSeqNumber + 1
             outgoingSourcePort = incomingDestinationPort
             outgoingDestinationPort = incomingSourcePort
-            outgoingPacketLength = 32 + 4
+            outgoingPacketLength = 32
 
             # Form the entire CHALLENGE+ACK packet
             outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
