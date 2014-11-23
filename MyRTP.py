@@ -50,15 +50,33 @@ class MyRTP:
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
     # This method associates a port on the machine with the socket
-    def bindRTPSocket(address, portNum):
+    def bindRTPSocket(self, address, portNum):
         # Extract the IP address and the port number from the address tuple
         ipAddress = address
         portNumber = portNum
+
+    def calculateChecksum(self, packet):
+        emptyArray = bytearray(8)
+        myBytes = packet[0:12] 
+        for i in emptyArray:
+            myBytes.append(i)
+        for i in packet[20:]:
+            myBytes.append(i)
+        hasher = hashlib.sha256()
+        hasher.update(myBytes)
+        checksum = hasher.digest()
+        return checksum[0:64]   
+        
+    # This makes sure the checksum is okay
+    def checkSumOkay(self, packet):
+        checksum = packet[12:20]
+        ourChecksum = calculateChecksum(packet)
+        return (checksum == ourChecksum)  
     
-    def formPacket(sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
+    def formPacket(self, sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
         outgoingPacket = bytearray()
         for eachByte in sourcePort.to_bytes(2, byteorder = 'big'):
-            outgoingpacket.append(eachByte)
+            outgoingPacket.append(eachByte)
         for eachByte in destinationPort.to_bytes(2, byteorder = 'big'):
             outgoingPacket.append(eachByte)
         for eachByte in seqNum.to_bytes(4, byteorder = 'big'):
@@ -119,7 +137,7 @@ class MyRTP:
             outgoingPacketLength = 32 + 4
 
             # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
                 goutgoingAckNumberlobalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
@@ -143,7 +161,7 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire SYN+ACK packet
-            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
                 globalAckNumber, maxWindowSize, outgoingPacketLength, headerFlags[5], bytearray())
 
             # Send the SYN+ACK packet
@@ -184,7 +202,7 @@ class MyRTP:
 
 
     # This function is used to receive data
-    def receiveRTP(numberOfBytes):
+    def receiveRTP(self, numberOfBytes):
         #handle lost, out of order, and corrupt packets
         #sequence number should be somewhere
         incomingMessage = bytearray()
@@ -209,7 +227,7 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire packet
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
 
             # Send the ACK packet
@@ -228,7 +246,7 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire packet
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], byteArray())
 
             # Send the packet
@@ -259,7 +277,7 @@ class MyRTP:
                     outgoingPacketLength = 32
 
                     # Form the entire packet
-                    outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                    outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                         outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
 
                     # Send the ACK packet
@@ -293,26 +311,10 @@ class MyRTP:
     #    sequenceNumber = writeOutputFromCache()         
     #acknowledge(this)
 
-    def calculateChecksum(packet):
-        emptyArray = bytearray(8)
-        myBytes = packet[0:12] 
-        for i in emptyArray:
-            myBytes.append(i)
-        for i in packet[20:]:
-            myBytes.append(i)
-        hasher = hashlib.sha256()
-        hasher.update(myBytes)
-        checksum = hasher.digest()
-        return checksum[0:64]   
-        
-    # This makes sure the checksum is okay
-    def checkSumOkay(packet):
-        checksum = packet[12:20]
-        ourChecksum = calculateChecksum(packet)
-        return (checksum == ourChecksum)        
+          
         
     # Adds data to cache and ensures ascending order of sequence numbers
-    def addToCache(packet):
+    def addToCache(self, packet):
         cache.append(packet)
         cache.sortBySequenceNumbers()
         
@@ -333,7 +335,7 @@ class MyRTP:
 
 
     # This function connects to the specified IP address and port
-    def connectRTP(address, portNum):
+    def connectRTP(self, address, portNum):
         # Extract the IP address and the port number from the address tuple
         ipAddress = address
         portNumber = portNum
@@ -355,8 +357,8 @@ class MyRTP:
         # Form the entire SYN packet
         globalSeqNumber = 0
         globalAckNumber = 0
-        outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  0,  
-            0, maxWindowSize,  32, headerFlags[0], bytearray())
+        outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  0,  
+            0, self.maxWindowSize,  32, self.headerFlags[0], bytearray())
 
         # Send the SYN packet
         udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -374,7 +376,7 @@ class MyRTP:
             outgoingPacketLength = 32 + 4
 
             # Form the entire ACK packet
-            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
                 globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
 
             # Send the ACK packet
@@ -398,7 +400,7 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Syn + Ack comment
-            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
                 globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the SYN+ACK packet
@@ -410,7 +412,7 @@ class MyRTP:
             return False
 
     # This function will be used to send data
-    def sendRTP(message):
+    def sendRTP(self, message):
         '''
         #simple?
         loop through byte array
@@ -431,7 +433,7 @@ class MyRTP:
                 outgoingPacketLength = messageLength + 32
 
             # Form the packet
-            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort, globalSeqNumber,  
+            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort, globalSeqNumber,  
                 globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], message[(numPacketsSent * (maxPacketLength - 32)):(numPacketsSent * (maxPacketLength - 32) + outgoingPacketLength - 32)])
 
             # Send the packet
@@ -458,7 +460,7 @@ class MyRTP:
         ##
         '''
         
-        outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+        outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
             outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
         
         # Send the FIN packet
@@ -493,7 +495,7 @@ class MyRTP:
                 outgoingPacketLength = 32
 
                 # Send uh Ack
-                outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                     outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
                 # Send the Ack attack packet
@@ -522,7 +524,7 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Send a ACK 
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the ACK packet
@@ -555,7 +557,7 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Send a ACK 
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the ACK packet
