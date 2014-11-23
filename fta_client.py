@@ -15,8 +15,7 @@ def connect():
     socket = MyRTP.MyRTP()
     
     # Form a connection with the server
-    portNum = clientPortNumber + 1
-    socket.connectRTP("127.0.0.1", portNum)
+    socket.connectRTP("127.0.0.1", clientPortNumber)
 
     # Print a confirmation to the user
     print('Connection formed successfully')
