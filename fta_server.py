@@ -54,7 +54,7 @@ initializeServer(netEmuPort, netEmuIP, clientPortNumber)
 
 while True:
     # Check for the user to input commands
-    userInput = input('Enter a command for the FTA client:\n')
+    userInput = input('Enter a command for the FTA Server:\n')
 
     # Check for the type of command input by the user
     command = userInput.split(' ')[0]

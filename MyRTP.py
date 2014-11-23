@@ -128,11 +128,15 @@ class MyRTP:
         global emuPortNumber
         emuIpNumber = netEmuIp
         emuPortNumber = netEmuPort
-        if self.canListen is False:
+        print('check listen')
+        print(canListen)
+        if canListen is False:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
         incomingMessage = bytearray()
+        print('listening for connections')
         packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+        print('got first packet')
         # If the packet was a SYN packet, generate a random number for the CHALLENGE+ACK reply
         randomInt = random.randint(1, 4096)
 
@@ -343,6 +347,7 @@ class MyRTP:
     
     # This function allows the socket to begin listening for connection requests
     def listenRTP(self):
+        global canListen        
         canListen = True
 
 
@@ -379,6 +384,7 @@ class MyRTP:
 
         # Send the SYN packet
         udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+        print('sent first packet')
         
         # Use a blocking UDP call to wait for the CHALLENGE+ACK packet to come back
         incomingMessage = bytearray()
