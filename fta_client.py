@@ -15,7 +15,7 @@ def connect():
     socket = MyRTP.MyRTP()
     
     # Form a connection with the server
-    socket.connectRTP("127.0.0.1", clientPortNumber)
+    socket.connectRTP("127.0.0.1", clientPortNumber, netEmuIP)
 
     # Print a confirmation to the user
     print('Connection formed successfully')

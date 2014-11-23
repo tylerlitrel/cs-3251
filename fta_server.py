@@ -68,7 +68,7 @@ while True:
         print('Not a valid command')
 
     # Wait for a client to connect to the server
-    socket.acceptRTPConnection(clientPortNumber)
+    socket.acceptRTPConnection(clientPortNumber, netEmuIP)
 
     # Once a client connects, wait for commands
     command = socket.receiveRTP(800000)
