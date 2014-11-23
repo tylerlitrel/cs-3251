@@ -347,10 +347,12 @@ class MyRTP:
 
 
     # This function connects to the specified IP address and port
-    def connectRTP(self, address, portNum, netEmu):
+    def connectRTP(self, portNum, netEmuIP, netEmuPort):
         # Extract the IP address and the port number from the address tuple
-        ipAddress = address
-        portNumber = portNum
+        global emuIpNumber
+        global emuPortNumber
+        emuIpNumber = netEmuIP
+        emuPortNumber = netEmuPort
 
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
