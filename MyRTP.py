@@ -2,6 +2,7 @@
 
 import hashlib
 import random
+import socket
 def calculateChecksum( packet):
         emptyArray = bytearray(8)
         myBytes = packet[0:12] 
@@ -12,7 +13,7 @@ def calculateChecksum( packet):
         hasher = hashlib.sha256()
         hasher.update(myBytes)
         checksum = hasher.digest()
-        return checksum[0:64]   
+        return checksum[0:8]   
         
 class MyRTP:
     # This is for caching out-of-order packets
@@ -38,7 +39,7 @@ class MyRTP:
     # THis will be the source port included in outgoing packets
     globalSourcePort = 0
     # This will be the destination port included in outgoing packets
-    globalDestinationPort = 0
+    globalDestinationPort = 3
     # This is the UDP socket that we will use underneath our RTP protocol
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
@@ -98,7 +99,7 @@ class MyRTP:
         checksum = calculateChecksum(outgoingPacket)
         index = 12
         for eachByte in checksum:
-           outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
+           outgoingPacket[index] = eachByte
            index = index + 1
         return outgoingPacket
     # This function is used to create a socket by the server to communicate with a specific client
@@ -339,6 +340,9 @@ class MyRTP:
         ipAddress = address
         portNumber = portNum
 
+        global udpSocket
+        udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
         # Perform the initial handshake to set up the connection
         '''
         send a syn to the server
@@ -360,10 +364,11 @@ class MyRTP:
             0, self.maxWindowSize,  32, self.headerFlags[0], bytearray())
 
         # Send the SYN packet
-        udpSocket.sendto(outgoingPacket, incomingAddress)
+        udpSocket.sendto(outgoingPacket, ("127.0.0.1", self.globalDestinationPort))
         
         # Use a blocking UDP call to wait for the CHALLENGE+ACK packet to come back
-        incomingMessage, incomingAddress = udpSocket.recvfrom_into(packetLength)
+        incomingMessage = bytearray()
+        packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
 
         # Check to see if the packet is a CHALLENGE+ACK packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[4] and checkSumOkay(incomingMessage)):
