@@ -1,0 +1,3 @@
+they create a ReliTP socket and it has inside itself a udp socket
+
+we do not ever return socket ever
