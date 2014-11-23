@@ -296,7 +296,8 @@ class MyRTP:
             return
 
         # Use a blocking UDP call to wait for the SYN+ACK to come back
-        incomingMessage2, incomingAddress2 = udpSocket.recvfrom_into(packetLength)
+        incomingMessage2 = bytearray()
+        packetLength, incomingAddress2 = udpSocket.recvfrom_into(incomingMessage2)
         udpSocket.settimeout(5)
 
         # Check to see if the packet is a SYN+ACK packet (indicated in 29th byte of header)
@@ -338,12 +339,110 @@ class MyRTP:
 		
 	# This function will be used to close a connection
 	def closeRTPSocket():
-		#protocol in document
+        # Send the FIN packet
+        outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
 		
-		
-		
-		
-		
-		
+        # Send the FIN packet
+        udpSocket.sendto(outgoingPacket, incomingAddress)
+
+        # Wait for the reply to the FIN
+        incomingMessage = bytearray()
+        packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+
+        # Check if the packet is an ACK
+        if(incomingMessage[29] == headerFlags[1] and checkSumOkay(incomingMessage)):
+            # Retrieve the needed information from the incoming packet
+            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+
+            # Modify the fields for the outgoing ACK packet
+            outgoingSeqNumber = incomingAckNumber
+            outgoingAckNumber = incomingSeqNumber + 1
+            outgoingSourcePort = incomingDestinationPort
+            outgoingDestinationPort = incomingSourcePort
+            outgoingPacketLength = 32
+
+            # Send a FIN
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
+
+            # Send the FIN packet
+            udpSocket.sendto(outgoingPacket, incomingAddress)
+
+            # Wait for a timeout period
+            time.sleep(5)
+
+            # Close the socket
+            canListen = false
+            udpSocket.close()
+		# Check if the packet is a FIN
+        if(incomingMessage[29] == headerFlags[2] and checkSumOkay(incomingMessage)):
+            # Send an ACK
+            # Retrieve the needed information from the incoming packet
+            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+
+            # Modify the fields for the outgoing ACK packet
+            outgoingSeqNumber = incomingAckNumber
+            outgoingAckNumber = incomingSeqNumber + 1
+            outgoingSourcePort = incomingDestinationPort
+            outgoingDestinationPort = incomingSourcePort
+            outgoingPacketLength = 32
+
+            # Send a ACK 
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+
+            # Send the ACK packet
+            udpSocket.sendto(outgoingPacket, incomingAddress)
+
+            # Wait for an ACK
+            incomingMessage = bytearray()
+            packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            if(incomingMessage[29] == headerFlags[1] and checkSumOkay(incomingMessage)):
+                # Wait for a timeout period
+                time.sleep(5)
+
+                # Close the socket
+                canListen = false
+                udpSocket.close()
+		# Check if the packet is a FIN+ACK
+        if(incomingMessage[29] == headerFlags[6] and checkSumOkay(incomingMessage)):
+            # Send an ACK
+            # Retrieve the needed information from the incoming packet
+            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+
+            # Modify the fields for the outgoing ACK packet
+            outgoingSeqNumber = incomingAckNumber
+            outgoingAckNumber = incomingSeqNumber + 1
+            outgoingSourcePort = incomingDestinationPort
+            outgoingDestinationPort = incomingSourcePort
+            outgoingPacketLength = 32
+
+            # Send a ACK 
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+
+            # Send the ACK packet
+            udpSocket.sendto(outgoingPacket, incomingAddress)
+
+            # Wait for an ACK
+            incomingMessage = bytearray()
+            packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+
+            # Wait for a timeout period
+            time.sleep(5)
+
+            # Close the socket
+            canListen = false
+            udpSocket.close()
 		
 need to create a packet object with sequence and raw data
