@@ -12,7 +12,7 @@ import sys
 # Connects to the FTA server running on the same IP host
 def connect():
     # Create an RTP socket to be used
-    socket = MyRTP()
+    socket = MyRTP.MyRTP()
     
     # Form a connection with the server
     socket.connectRTP(("127.0.0.1", clientPortNumber + 1))
@@ -67,9 +67,9 @@ def disconnect():
 
 
 # Retrieve the values from the command line arguments
-clientPortNumber = sys.argv[1]
+clientPortNumber = int(sys.argv[1])
 netEmuIP = sys.argv[2]
-netEmuPort = sys.argv[3]
+netEmuPort = int(sys.argv[3])
 
 # Declare a variable that can later be used for an RTP socket
 socket = None
