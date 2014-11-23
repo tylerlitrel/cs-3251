@@ -99,7 +99,7 @@ class MyRTP:
             if it is not correct then we go back to the top in some fashion
         '''
         if canListen is False:
-            return
+            return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
         incomingMessage = bytearray()
         packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
@@ -126,7 +126,7 @@ class MyRTP:
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
             # The packet was not a SYN or the packet was corrupt 
-            return
+            return False
 
         # Use a blocking UDP call to wait for the answer to come back
         incomingMessage2 = bytearray()
@@ -149,7 +149,7 @@ class MyRTP:
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
-            return
+            return False
 
         # Use a blocking UDP call to wait for the ACK to come from the client
         incomingMessage3, incomingAddress2 = udpSocket.recvfrom_into(packetLength)
@@ -177,11 +177,10 @@ class MyRTP:
             udpSocket.sendto(outgoingPacket, incomingAddress)
             '''
 
-            # The handshake has been successfully completed, return a socket for communicating with the client
-            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            return clientSocket
+            # The handshake has been successfully completed, return true 
+            return True
         else:
-            return
+            return False
 
 
     # This function is used to receive data
@@ -382,7 +381,7 @@ class MyRTP:
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
             # The packet was not a CHALLENGE+ACK or the packet was corrupt 
-            return
+            return False
 
         # Use a blocking UDP call to wait for the SYN+ACK to come back
         incomingMessage2 = bytearray()
@@ -404,9 +403,11 @@ class MyRTP:
 
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
+
+            return True
         else:
             # The packet was not a CHALLENGE+ACK or the packet was corrupt 
-            return
+            return False
 
     # This function will be used to send data
     def sendRTP(message):
