@@ -18,6 +18,24 @@ initializeServer(sys.argv[3], sys.argv[2], sys.argv[1])
 
 # Include some way to both check for the user input commands and checking for incoming connections
 
+while True:
+    # Check for the user to input commands
+    userInput = raw_input('Enter a command for the FTA client:\n')
+
+    #port number
+    #net emu ip address
+    #net emu port number
+    
+    # Check for the type of command input by the user
+    command = user_input.split(' ')[0]
+    if command == 'terminate':
+        socket.close()
+    elif command == 'window':
+        socket.setMaxWindowSize(user_input.split(' ')[1])
+    elif command == 'exit':
+        sys.exit()
+    else:
+        print 'Not a valid command'
 
 # This function will be used to initialize the server with the specified options
 def initiatlizeServer(netEmuPort, netEmuIP, portNumber):
