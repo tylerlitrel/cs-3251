@@ -194,7 +194,7 @@ class MyRTP:
         #closing stuff
         #send ack
         # Check to see if the packet is a FIN packet (indicated in 28th byte of header)
-        if(incomingMessage[28] == headerFlags[2] and checkSumOkay(incomingMessage)):
+        if(incomingMessage[28] == headerFlags[2]):
             # Retrieve the needed information from the incoming packet
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
             incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
@@ -239,6 +239,26 @@ class MyRTP:
             if(incomingMessage[28] == headerFlags[1] and checkSumOkay(incomingMessage)):
                 udpSocket.close()
                 canListen = False
+                return
+        else:
+            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+
+            outgoingSeqNumber = incomingAckNumber
+            outgoingAckNumber = incomingSeqNumber + 1
+            outgoingSourcePort = incomingDestinationPort
+            outgoingDestinationPort = incomingSourcePort
+            outgoingPacketLength = 32
+
+            # Form the entire packet
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
+
+            # Send the ACK packet
+            udpSocket.sendto(outgoingPacket, incomingAddress)
+            return incomingMessage[32:]
         
     #addToCache(this)
     #sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
