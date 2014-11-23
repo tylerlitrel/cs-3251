@@ -33,6 +33,12 @@ while True:
     else:
         print 'Not a valid command'
 
+    # Wait for a client to connect to the server
+    socket.accept()
+
+    # Once a client connects, wait for commands
+    command = socket.receiveRTP(800000)
+
 # This function will be used to initialize the server with the specified options
 def initiatlizeServer(netEmuPort, netEmuIP, portNumber):
     # Set the necessary configuration values from the defaults and parameter
@@ -49,7 +55,6 @@ def initiatlizeServer(netEmuPort, netEmuIP, portNumber):
 
     # Allow the socket to accept incoming connections
     socket.listenRTP()
-    socket.accept()
 
 # This function will be used to modify the window size being used by the application
 def setWindowSize(newWindowSize):
