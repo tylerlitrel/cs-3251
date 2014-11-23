@@ -23,7 +23,7 @@ class MyRTP:
     # This is the UDP socket that we will use underneath our RTP protocol
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
-    headerFlags = bytearray.fromhex('80 40 20 10 50 C0 60')
+    headerFlags = bytearray.fromhex('80 40 20 10 50 C0 60 08')
         
     # this will set the window size
     def setMaxWindowSize(newWindowSize):
@@ -181,20 +181,18 @@ class MyRTP:
         return clientSocket
 
     # This function is used to receive data
-    def receiveRTP(packetLength):
+    def receiveRTP(numberOfBytes):
         #handle lost, out of order, and corrupt packets
         #sequence number should be somewhere
         incomingMessage = bytearray()
         thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
-        if checkSumOkay(myArray) is False:
-            return
             
-            
+        returnData = bytearray()
             
         #closing stuff
         #send ack
         # Check to see if the packet is a FIN packet (indicated in 28th byte of header)
-        if(incomingMessage[28] == headerFlags[2]):
+        if(incomingMessage[28] == headerFlags[2] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
             incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
@@ -241,25 +239,34 @@ class MyRTP:
                 canListen = False
                 return
         else:
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+            while(True):
+                if(checksumOkay(incomingMessage) is False):
+                        #do nothing
+                else:
+                    incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+                    incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+                    incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+                    incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
 
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
-            outgoingPacketLength = 32
+                    outgoingSeqNumber = incomingAckNumber
+                    outgoingAckNumber = incomingSeqNumber + len(incomingMessage) - 32
+                    outgoingSourcePort = incomingDestinationPort
+                    outgoingDestinationPort = incomingSourcePort
+                    outgoingPacketLength = 32
 
-            # Form the entire packet
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
+                    # Form the entire packet
+                    outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                        outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
 
-            # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
-            return incomingMessage[32:]
-        
+                    # Send the ACK packet
+                    udpSocket.sendto(outgoingPacket, incomingAddress)
+                    for eachByte in incomingMessage[32:]:
+                        returnData.append(eachByte)
+                    if(incomingMessage[28] == headerFlag[7]):
+                        break
+                incomingMessage = bytearray()
+                thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            return returnData
     #addToCache(this)
     #sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
     #if expectedSeq == sequenceNumberHere:

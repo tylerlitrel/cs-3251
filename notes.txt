@@ -1,3 +1,7 @@
 they create a ReliTP socket and it has inside itself a udp socket
 
 we do not ever return socket ever
+
+
+added an extra flag bit to say when the transfer is done.
+this will let the receive function know when to stop waiting
