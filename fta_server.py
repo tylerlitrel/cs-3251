@@ -23,11 +23,11 @@ while True:
     userInput = raw_input('Enter a command for the FTA client:\n')
 
     # Check for the type of command input by the user
-    command = user_input.split(' ')[0]
+    command = userInput.split(' ')[0]
     if command == 'terminate':
         terminateServer()
     elif command == 'window':
-        setWindowSize(user_input.split(' ')[1])
+        setWindowSize(userInput.split(' ')[1])
     elif command == 'exit':
         sys.exit()
     else:
@@ -40,7 +40,7 @@ while True:
     command = socket.receiveRTP(800000)
 
 # This function will be used to initialize the server with the specified options
-def initiatlizeServer(netEmuPort, netEmuIP, portNumber):
+def initializeServer(netEmuPort, netEmuIP, portNumber):
     # Set the necessary configuration values from the defaults and parameter
 	netEmuPortNumber = netEmuPort
 	netEmuIPAddress = netEmuIP
@@ -66,4 +66,3 @@ def setWindowSize(newWindowSize):
 def terminateServer():
     global socket
     socket.closeRTPSocket()
-
