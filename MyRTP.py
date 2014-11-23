@@ -408,32 +408,41 @@ class MyRTP:
 
         # Check if the packet is an ACK
         if(incomingMessage[28] == headerFlags[1] and checkSumOkay(incomingMessage)):
-            # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+            
+            ## needs to wait for a fin to send an ack
+            
+            packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+            
+            #hfs need some wort of while loop in case we get a non fin. also we need this in many other places possibly
+            
+            if(incomingMessage[28] == headerFlags[2] and checkSumOkay(incomingMessage)):
+                        
+                # Retrieve the needed information from the incoming packet
+                incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+                incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+                incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+                incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
 
-            # Modify the fields for the outgoing ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
-            outgoingPacketLength = 32
+                # Modify the fields for the outgoing ACK packet
+                outgoingSeqNumber = incomingAckNumber
+                outgoingAckNumber = incomingSeqNumber + 1
+                outgoingSourcePort = incomingDestinationPort
+                outgoingDestinationPort = incomingSourcePort
+                outgoingPacketLength = 32
 
-            # Send a FIN
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
+                # Send uh Ack
+                outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                    outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
-            # Send the FIN packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+                # Send the Ack attack packet
+                udpSocket.sendto(outgoingPacket, incomingAddress)
 
-            # Wait for a timeout period
-            time.sleep(5)
+                # Wait for a timeout period
+                time.sleep(5)
 
-            # Close the socket
-            canListen = false
-            udpSocket.close()
+                # Close the socket
+                canListen = false
+                udpSocket.close()
         # Check if the packet is a FIN
         if(incomingMessage[28] == headerFlags[2] and checkSumOkay(incomingMessage)):
             # Send an ACK
