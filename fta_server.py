@@ -28,7 +28,7 @@ def initiatlizeServer(netEmuPort, netEmuIP, portNumber):
 
     # Create a socket for the server
     global socket
-    socket = RTP.createRTPSocket()
+    socket = MyRTP()
 
     # Bind the socket to a the local address
     socket.bindRTPSocket(("127.0.0.1", serverPortNumber))
@@ -39,8 +39,10 @@ def initiatlizeServer(netEmuPort, netEmuIP, portNumber):
 # This function will be used to modify the window size being used by the application
 def setWindowSize(newWindowSize):
     windowSize = newWindowSize
-
+    socket.setMaxWindowSize(newWindowSize)
 # This function will be used to gracefully shutdown the FTA-Server
 def terminateServer():
     global socket
     socket.closeRTPSocket()
+
+def 
