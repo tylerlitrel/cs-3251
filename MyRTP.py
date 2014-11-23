@@ -109,19 +109,18 @@ class MyRTP:
         # Check to see if the packet is a SYN packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[0] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
-            globalSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            globalAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') # Sequence number from incoming packet
+            globalSeqNumber = 0 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
             globalDestinationPort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
             globalSourcePort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
 
             # Modify the fields for the outgoing CHALLENGE+ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
+            globalAckNumber = globalAckNumber + 1
             outgoingPacketLength = 32 + 4
 
             # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
+            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+                goutgoingAckNumberlobalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -136,21 +135,17 @@ class MyRTP:
         if incomingAddress2 == incomingAddress and int.from_bytes(incomingMessage2[33:37], byteorder = 'big') == randomInt:
             # We received the correct answer to the challenge
             # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+            globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') # Sequence number from incoming packet
+            globalSeqNumber = globalSeqNumber + 4 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
 
             # Modify the fields for the outgoing SYN+ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
+            globalAckNumber = globalAckNumber + 4
             outgoingPacketLength = 32
 
             # Form the entire SYN+ACK packet
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[5], bytearray())
+            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, maxWindowSize, outgoingPacketLength, headerFlags[5], bytearray())
+
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
@@ -160,6 +155,7 @@ class MyRTP:
         incomingMessage3, incomingAddress2 = udpSocket.recvfrom_into(packetLength)
         udpSocket.settimeout(5)
         if incomingAddress3 == incomingAddress and incomingMessage[28] == headerFlags[1]:
+            '''
             # Retrieve the needed information from the incoming packet
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
             incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
@@ -179,12 +175,14 @@ class MyRTP:
 
             # Send the ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
+            '''
+
+            # The handshake has been successfully completed, return a socket for communicating with the client
+            clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            return clientSocket
         else:
             return
 
-        # The handshake has been successfully completed, return a socket for communicating with the client
-        clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        return clientSocket
 
     # This function is used to receive data
     def receiveRTP(numberOfBytes):
@@ -356,35 +354,31 @@ class MyRTP:
 
         # First, send a SYN packet to the server
         # Form the entire SYN packet
-        outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  0,  
+        globalSeqNumber = 0
+        globalAckNumber = 0
+        outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  0,  
             0, maxWindowSize,  32, headerFlags[0], bytearray())
 
         # Send the SYN packet
         udpSocket.sendto(outgoingPacket, incomingAddress)
         
-        # Use a blocking UDP call to wait for the CHALLENGE+ANSWER packet to come back
+        # Use a blocking UDP call to wait for the CHALLENGE+ACK packet to come back
         incomingMessage, incomingAddress = udpSocket.recvfrom_into(packetLength)
 
         # Check to see if the packet is a CHALLENGE+ACK packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[4] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+            globalAckNumber = globalAckNumber + 5
+            globalSeqNumber = globalSeqNumber + 1 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
 
-            # Modify the fields for the outgoing CHALLENGE+ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
-            outgoingPacketLength = 32
+            # Modify the fields for the outgoing ACK packet
+            outgoingPacketLength = 32 + 4
 
-            # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
+            # Form the entire ACK packet
+            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
 
-            # Send the CHALLENGE+ACK packet
+            # Send the ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
             # The packet was not a CHALLENGE+ACK or the packet was corrupt 
@@ -398,21 +392,15 @@ class MyRTP:
         # Check to see if the packet is a SYN+ACK packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[5] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+            globalAckNumber = globalAckNumber + 1
+            globalSeqNumber = globalSeqNumber + 5
 
-            # Modify the fields for the outgoing SYN+ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
+            # Modify the fields for the outgoing ACK packet
             outgoingPacketLength = 32
 
             # Syn + Ack comment
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
