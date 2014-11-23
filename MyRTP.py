@@ -119,7 +119,7 @@ class MyRTP:
 
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpSocket.bind(portNo)
+        udpSocket.bind((portNo))
         if self.canListen is False:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
@@ -346,7 +346,7 @@ class MyRTP:
 
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpSocket.bind(portNum
+        udpSocket.bind((portNum))
         # Perform the initial handshake to set up the connection
         '''
         send a syn to the server
