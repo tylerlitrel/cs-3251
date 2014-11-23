@@ -243,7 +243,7 @@ class MyRTP:
                 canListen = False
                 return
         else:
-        ''' edge case where fin packet is bad and we go in here anyways. will add while loop at top or incorporate this some how'''
+            ''' edge case where fin packet is bad and we go in here anyways. will add while loop at top or incorporate this some how'''
             while(True):
                 if(checksumOkay(incomingMessage) is False):
                     a=1    #do nothing
@@ -431,7 +431,7 @@ class MyRTP:
 
             # Form the packet
             outgoingPacket = formPacket(globalSourcePort, globalDestinationPort, globalSeqNumber,  
-                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], message[(numPacketsSent * (maxPacketLength - 32)):((numPacketsSent) * (maxPacketLength - 32) + outgoingPacketLength - 32])
+                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], message[(numPacketsSent * (maxPacketLength - 32)):(numPacketsSent * (maxPacketLength - 32) + outgoingPacketLength - 32)])
 
             # Send the packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
