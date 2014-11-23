@@ -103,7 +103,7 @@ class MyRTP:
            index = index + 1
         return outgoingPacket
     # This function is used to create a socket by the server to communicate with a specific client
-    def acceptRTPConnection(self, portNo):
+    def acceptRTPConnection(self, portNo, netEmu):
         '''
         this can only be called if listen has been called (remember that boolean)
             udp block on receive - ie it is waitin to here a SYN
@@ -119,7 +119,7 @@ class MyRTP:
 
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpSocket.bind(('',portNo))
+        udpSocket.bind((netEmu,portNo))
         if self.canListen is False:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
@@ -339,14 +339,14 @@ class MyRTP:
 
 
     # This function connects to the specified IP address and port
-    def connectRTP(self, address, portNum):
+    def connectRTP(self, address, portNum, netEmu):
         # Extract the IP address and the port number from the address tuple
         ipAddress = address
         portNumber = portNum
 
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpSocket.bind(('',portNum))
+        udpSocket.bind((netEmu,portNum))
         # Perform the initial handshake to set up the connection
         '''
         send a syn to the server
