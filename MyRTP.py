@@ -20,6 +20,14 @@ class MyRTP:
     maxPacketLength = 65535
     # This is the default window size
     maxWindowSize = 1024
+    # This will be the ack number to be put in outgoing packets
+    globalAckNumber = 0
+    # This will be the sequence number to be put in outgoing packets
+    globalSeqNumber = 0
+    # THis will be the source port included in outgoing packets
+    globalSourcePort = 0
+    # This will be the destination port included in outgoing packets
+    globalDestinationPort = 0
     # This is the UDP socket that we will use underneath our RTP protocol
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
@@ -381,9 +389,34 @@ class MyRTP:
         while(sendCache is not empty and notallpackets are sent):
             s
         '''
+        # Figure out the number of packets needed to send the message
+        messageLength = len(message)
+        numPacketsNeeded = math.ceil(messageLength / (maxPacketLength - 32))
         
-        
-        
+        numPacketsSent = 0
+        while numPacketsSent < numPacketsNeeded:
+            # Modify the fields for the outgoing packet
+            if(messageLength > maxPacketLength - 32):
+                outgoingPacketLength = maxPacketLength
+            else:
+                outgoingPacketLength = messageLength + 32
+
+            # Form the packet
+            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort, globalSeqNumber,  
+                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], message[(numPacketsSent * (maxPacketLength - 32)):((numPacketsSent) * (maxPacketLength - 32) + outgoingPacketLength - 32])
+
+            # Send the packet
+            udpSocket.sendto(outgoingPacket, incomingAddress)
+
+            # Wait for an ACK for the packet
+            ackPacket = bytearray()
+            packetLength, address = udpSocket.revcfrom_into(ackPacket)
+            if(ackPacket[28] == headerFlags[1] and int.from_bytes(ackPacket[8:12], byteorder = 'big') == globalSeqNumber + messageLength - 32 and checkSumOkay(ackPacket)):
+                # Increment the number of packets sent
+                numPacketsSent = numPacketsSent + 1
+                messageLength = messageLength - outgoingPacketLength + 32
+                globalSeqNumber = globalSeqNumber + outgoingPacketLength - 32
+                globalAckNumber = int.from_bytes(ackPacket[4:8], byteorder = 'big') + int.from_bytes(ackPacket[24:28], byteorder = 'big') - 32
         
     # This function will be used to close a connection
     def closeRTPSocket():
