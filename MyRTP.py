@@ -247,9 +247,10 @@ class MyRTP:
                 canListen = False
                 return
         else:
+        ''' edge case where fin packet is bad and we go in here anyways. will add while loop at top or incorporate this some how'''
             while(True):
                 if(checksumOkay(incomingMessage) is False):
-                        #do nothing
+                    a=1    #do nothing
                 else:
                     incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
                     incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
@@ -280,11 +281,14 @@ class MyRTP:
                         ''' do we say nothing and let it time out?'''
                             
                             
-                            
+                    if numberOfBytes <= 0:
+                        break
                     if(incomingMessage[28] == headerFlag[7]):
                         break
                 incomingMessage = bytearray()
                 thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+                globalSeqNumber = globalSeqNumber + 1
+                globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') + int.from_bytes(incomingMessage[24:28], byteorder = 'big') - 32
             return returnData
     #addToCache(this)
     #sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
@@ -454,7 +458,7 @@ class MyRTP:
                 numPacketsSent = numPacketsSent + 1
                 messageLength = messageLength - outgoingPacketLength + 32
                 globalSeqNumber = globalSeqNumber + outgoingPacketLength - 32
-                globalAckNumber = int.from_bytes(ackPacket[4:8], byteorder = 'big') + int.from_bytes(ackPacket[24:28], byteorder = 'big') - 32
+                globalAckNumber = int.from_bytes(ackPacket[4:8], byteorder = 'big') + 1
         
     # This function will be used to close a connection
     def closeRTPSocket():
