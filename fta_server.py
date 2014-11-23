@@ -17,30 +17,7 @@ currentSegmentsOut = 0 # This field will be used to ensure the window size is no
 clientPortNumber = sys.argv[1]
 netEmuIP = sys.argv[2]
 netEmuPort = sys.argv[3]
-initializeServer(netEmuPort, netEmuIP, clientPortNumber)
 
-# Include some way to both check for the user input commands and checking for incoming connections
-
-while True:
-    # Check for the user to input commands
-    userInput = input('Enter a command for the FTA client:\n')
-
-    # Check for the type of command input by the user
-    command = userInput.split(' ')[0]
-    if command == 'terminate':
-        terminateServer()
-    elif command == 'window':
-        setWindowSize(userInput.split(' ')[1])
-    elif command == 'exit':
-        sys.exit()
-    else:
-        print('Not a valid command')
-
-    # Wait for a client to connect to the server
-    socket.accept()
-
-    # Once a client connects, wait for commands
-    command = socket.receiveRTP(800000)
 
 # This function will be used to initialize the server with the specified options
 def initializeServer(netEmuPort, netEmuIP, portNumber):
@@ -69,3 +46,29 @@ def setWindowSize(newWindowSize):
 def terminateServer():
     global socket
     socket.closeRTPSocket()
+
+    
+initializeServer(netEmuPort, netEmuIP, clientPortNumber)
+
+# Include some way to both check for the user input commands and checking for incoming connections
+
+while True:
+    # Check for the user to input commands
+    userInput = input('Enter a command for the FTA client:\n')
+
+    # Check for the type of command input by the user
+    command = userInput.split(' ')[0]
+    if command == 'terminate':
+        terminateServer()
+    elif command == 'window':
+        setWindowSize(userInput.split(' ')[1])
+    elif command == 'exit':
+        sys.exit()
+    else:
+        print('Not a valid command')
+
+    # Wait for a client to connect to the server
+    socket.accept()
+
+    # Once a client connects, wait for commands
+    command = socket.receiveRTP(800000)
