@@ -8,36 +8,6 @@
 import MyRTP
 import sys
 
-# Retrieve the values from the command line arguments
-clientPortNumber = sys.argv[1]
-netEmuIP = sys.argv[2]
-netEmuPort = sys.argv[3]
-
-# Declare a variable that can later be used for an RTP socket
-socket = None
-windowSize = 100
-currentSegmentsOut = 0 # This field will be used to ensure the window size is not exceeded
-
-while True:
-    # Check for the user to input commands
-    userInput = input('Enter a command for the FTA client:\n')
-
-    # Check for the type of command input by the user
-    command = userInput.split(' ')[0]
-    if command == 'connect':
-        connect()
-    elif command == 'get':
-        retrieveFile(userInput.split(' ')[1])
-    elif command == 'put':
-        sendFile(userInput.split(' ')[1])
-    elif command == 'window':
-        setWindowSize(int(userInput.split(' ')[1]))
-    elif command == 'disconnect':
-        disconnect()
-    elif command == 'exit':
-        sys.exit()
-    else:
-        print('Not a valid command')
 
 # Connects to the FTA server running on the same IP host
 def connect():
@@ -94,3 +64,36 @@ def disconnect():
 
     # Print a confirmation to the user
     print('Successfully disconnected from server')
+
+
+# Retrieve the values from the command line arguments
+clientPortNumber = sys.argv[1]
+netEmuIP = sys.argv[2]
+netEmuPort = sys.argv[3]
+
+# Declare a variable that can later be used for an RTP socket
+socket = None
+windowSize = 100
+currentSegmentsOut = 0 # This field will be used to ensure the window size is not exceeded
+
+while True:
+    # Check for the user to input commands
+    userInput = input('Enter a command for the FTA client:\n')
+
+    # Check for the type of command input by the user
+    command = userInput.split(' ')[0]
+    if command == 'connect':
+        connect()
+    elif command == 'get':
+        retrieveFile(userInput.split(' ')[1])
+    elif command == 'put':
+        sendFile(userInput.split(' ')[1])
+    elif command == 'window':
+        setWindowSize(int(userInput.split(' ')[1]))
+    elif command == 'disconnect':
+        disconnect()
+    elif command == 'exit':
+        sys.exit()
+    else:
+        print('Not a valid command')
+
