@@ -256,7 +256,7 @@ class MyRTP:
                     incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
                     incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
 
-                    outgoingSeqNumber = incomingAckNumber
+                    outgoingSeqNumber = incomingAckNumber + 1
                     outgoingAckNumber = incomingSeqNumber + len(incomingMessage) - 32
                     outgoingSourcePort = incomingDestinationPort
                     outgoingDestinationPort = incomingSourcePort
@@ -269,7 +269,18 @@ class MyRTP:
                     # Send the ACK packet
                     udpSocket.sendto(outgoingPacket, incomingAddress)
                     for eachByte in incomingMessage[32:]:
-                        returnData.append(eachByte)
+                        if(numberOfBytes > 0):
+                            returnData.append(eachByte)
+                            numberOfBytes = numberOfBytes - 1
+                        else:
+                            break
+                            
+                            
+                        ''' how do we let the server know if we are done before the file???'''
+                        ''' do we say nothing and let it time out?'''
+                            
+                            
+                            
                     if(incomingMessage[28] == headerFlag[7]):
                         break
                 incomingMessage = bytearray()

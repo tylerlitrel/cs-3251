@@ -5,7 +5,7 @@
 # CourseL CS 3251 B
 
 # Import the file containing the functions for the RTP protocol and any other necessary modules
-import RTP
+import MyRTP
 import sys
 
 # Retrieve the values from the command line arguments
@@ -42,7 +42,7 @@ while True:
 # Connects to the FTA server running on the same IP host
 def connect():
     # Create an RTP socket to be used
-    socket = RTP.createRTPSocket()
+    socket = MyRTP()
     
     # Form a connection with the server
     socket.connectRTP(("127.0.0.1", clientPortNumber + 1))
