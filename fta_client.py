@@ -53,10 +53,10 @@ def connect():
 # This function retrieves the specified file from the server
 def retrieveFile(filename):
     # First tell the server that it needs to send a file
-    sendRTP('serverToClient')
+    socket.sendRTP('serverToClient')
 
     # Receive the file from the server
-    fileByteArray = receiveRTP(8000000)
+    fileByteArray = receiveRTP(2000000000)
 
     # Write the file to the directory
     file = open(filename, 'wb')
@@ -68,13 +68,13 @@ def retrieveFile(filename):
 # This function sends a file to the server
 def sendFile(filename):
     # First tell the server that it is receiving a file
-    sendRTP('clientToServer')
+    socket.sendRTP('clientToServer')
 
     # Load the file into a byte array
     fileByteArray = open(filename, 'rb').read()
 
     # Send the file to the server
-    sendRTP(fileByteArray)
+    socket.sendRTP(fileByteArray)
 
     # Print a confirmation to the user
     print 'File has been sent to the server'
@@ -83,7 +83,7 @@ def sendFile(filename):
 def setWindowSize(newWindowSize):
     # Update the window size
     windowSize = newWindowSize
-
+    socket.setMaxWindowSize(newWindowSize)
     # Print a confirmation to the user
     print 'The window size has been updated'
 
