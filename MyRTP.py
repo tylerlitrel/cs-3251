@@ -50,10 +50,10 @@ class MyRTP:
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         
     # This method associates a port on the machine with the socket
-    def bindRTPSocket(address):
+    def bindRTPSocket(address, portNum):
         # Extract the IP address and the port number from the address tuple
-        ipAddress = address[0]
-        portNumber = address[1]
+        ipAddress = address
+        portNumber = portNum
     
     def formPacket(sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
         outgoingPacket = bytearray()
@@ -333,10 +333,10 @@ class MyRTP:
 
 
     # This function connects to the specified IP address and port
-    def connectRTP(address):
+    def connectRTP(address, portNum):
         # Extract the IP address and the port number from the address tuple
-        ipAddress = address[0]
-        portNumber = address[1]
+        ipAddress = address
+        portNumber = portNum
 
         # Perform the initial handshake to set up the connection
         '''
