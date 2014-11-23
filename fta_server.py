@@ -5,7 +5,7 @@
 # Course: CS 3251 
 
 # Import the file containing the functions for the RTP protocol and any other necessary modules
-import RTP
+import MyRTP
 import sys
 
 # Create a variable to contain a socket and other necessary variables
@@ -14,13 +14,16 @@ windowSize = 100
 currentSegmentsOut = 0 # This field will be used to ensure the window size is not exceeded
 
 # Get the command line arguments when the fta-server.py script is run, and initialize the server
-initializeServer(sys.argv[3], sys.argv[2], sys.argv[1])
+clientPortNumber = sys.argv[1]
+netEmuIP = sys.argv[2]
+netEmuPort = sys.argv[3]
+initializeServer(netEmuPort, netEmuIP, clientPortNumber)
 
 # Include some way to both check for the user input commands and checking for incoming connections
 
 while True:
     # Check for the user to input commands
-    userInput = raw_input('Enter a command for the FTA client:\n')
+    userInput = input('Enter a command for the FTA client:\n')
 
     # Check for the type of command input by the user
     command = userInput.split(' ')[0]
@@ -31,7 +34,7 @@ while True:
     elif command == 'exit':
         sys.exit()
     else:
-        print 'Not a valid command'
+        print('Not a valid command')
 
     # Wait for a client to connect to the server
     socket.accept()
@@ -42,8 +45,8 @@ while True:
 # This function will be used to initialize the server with the specified options
 def initializeServer(netEmuPort, netEmuIP, portNumber):
     # Set the necessary configuration values from the defaults and parameter
-	netEmuPortNumber = netEmuPort
-	netEmuIPAddress = netEmuIP
+    netEmuPortNumber = netEmuPort
+    netEmuIPAddress = netEmuIP
     serverPortNumber = portNumber
 
     # Create a socket for the server
