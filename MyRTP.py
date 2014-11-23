@@ -103,7 +103,7 @@ class MyRTP:
            index = index + 1
         return outgoingPacket
     # This function is used to create a socket by the server to communicate with a specific client
-    def acceptRTPConnection():
+    def acceptRTPConnection(self):
         '''
         this can only be called if listen has been called (remember that boolean)
             udp block on receive - ie it is waitin to here a SYN
@@ -116,7 +116,11 @@ class MyRTP:
             this wil return a socket up in this shiznit
             if it is not correct then we go back to the top in some fashion
         '''
-        if canListen is False:
+
+        global udpSocket
+        udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+        if self.canListen is False:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
         incomingMessage = bytearray()
@@ -330,7 +334,7 @@ class MyRTP:
     
     
     # This function allows the socket to begin listening for connection requests
-    def listenRTP():
+    def listenRTP(self):
         canListen = True
 
 
@@ -454,7 +458,7 @@ class MyRTP:
                 globalAckNumber = int.from_bytes(ackPacket[4:8], byteorder = 'big') + 1
         
     # This function will be used to close a connection
-    def closeRTPSocket():
+    def closeRTPSocket(self):
         # Send the FIN packet
         
         '''  

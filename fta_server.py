@@ -28,7 +28,7 @@ def initializeServer(netEmuPort, netEmuIP, portNumber):
 
     # Create a socket for the server
     global socket
-    socket = MyRTP()
+    socket = MyRTP.MyRTP()
 
     # Bind the socket to a the local address
     socket.bindRTPSocket("127.0.0.1", serverPortNumber)
@@ -68,7 +68,7 @@ while True:
         print('Not a valid command')
 
     # Wait for a client to connect to the server
-    socket.accept()
+    socket.acceptRTPConnection()
 
     # Once a client connects, wait for commands
     command = socket.receiveRTP(800000)
