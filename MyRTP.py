@@ -184,13 +184,57 @@ class MyRTP:
 	def receiveRTP(packetLength):
 		#handle lost, out of order, and corrupt packets
 		#sequence number should be somewhere
-		myArray = bytearray()
-		udpSocket.recvfrom_into(myArray)
+		incomingMessage = bytearray()
+		thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
 		if !checkSumOkay(myArray):
 			return
 		#closing stuff
 		if myArray[28] == headerFlags[2]:
-			startClosing
+			#send ack
+			# Check to see if the packet is a SYN packet (indicated in 29th byte of header)
+			if(incomingMessage[29] == headerFlags[0] and checkSumOkay(incomingMessage)):
+				# Retrieve the needed information from the incoming packet
+				incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+				incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+				incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+				incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+
+				outgoingSeqNumber = incomingAckNumber
+				outgoingAckNumber = incomingSeqNumber + 1
+				outgoingSourcePort = incomingDestinationPort
+				outgoingDestinationPort = incomingSourcePort
+				outgoingPacketLength = 32
+
+				# Form the entire packet
+				outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+					outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(randomInt, byteorder = 'big'))
+
+				# Send the CHALLENGE+ACK packet
+				udpSocket.sendto(outgoingPacket, incomingAddress)
+			udpSocket.setTimeout(2)
+			
+			thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+			
+			incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+			incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+			incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+			incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+
+			outgoingSeqNumber = incomingAckNumber
+			outgoingAckNumber = incomingSeqNumber + 1
+			outgoingSourcePort = incomingDestinationPort
+			outgoingDestinationPort = incomingSourcePort
+			outgoingPacketLength = 32
+
+			# Form the entire packet
+			outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(randomInt, byteorder = 'big'))
+
+			# Send the CHALLENGE+ACK packet
+			udpSocket.sendto(outgoingPacket, incomingAddress)
+			
+			#send fin
+			#get ack. close socket
 			
 		#addToCache(this)
 		#sequenceNumberHere = getSeqFromByteArray(dataFromUDP)
