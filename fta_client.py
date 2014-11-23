@@ -12,6 +12,7 @@ import sys
 # Connects to the FTA server running on the same IP host
 def connect():
     # Create an RTP socket to be used
+    global socket
     socket = MyRTP.MyRTP()
     
     # Form a connection with the server

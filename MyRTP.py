@@ -181,7 +181,7 @@ class MyRTP:
 
             # Form the entire SYN+ACK packet
             outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
-                globalAckNumber, maxWindowSize, outgoingPacketLength, headerFlags[5], bytearray())
+                globalAckNumber, self.maxWindowSize, outgoingPacketLength, self.headerFlags[5], bytearray())
 
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
@@ -191,7 +191,7 @@ class MyRTP:
         # Use a blocking UDP call to wait for the ACK to come from the client
         incomingMessage3 = udpSocket.recv(self.maxPacketLength)
         udpSocket.settimeout(5)
-        if incomingMessage3[28] == headerFlags[1]:
+        if incomingMessage3[28] == self.headerFlags[1]:
             '''
             # Retrieve the needed information from the incoming packet
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
@@ -224,6 +224,7 @@ class MyRTP:
     def receiveRTP(self, numberOfBytes):
         #handle lost, out of order, and corrupt packets
         #sequence number should be somewhere
+        udpSocket.settimeout(None)
         incomingMessage = udpSocket.recv(self.maxPacketLength)
             
         returnData = bytearray()
@@ -415,7 +416,7 @@ class MyRTP:
         udpSocket.settimeout(5)
 
         # Check to see if the packet is a SYN+ACK packet (indicated in 28th byte of header)
-        if(incomingMessage2[28] == headerFlags[5] and checkSumOkay(incomingMessage)):
+        if(incomingMessage2[28] == self.headerFlags[5] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             globalAckNumber = globalAckNumber + 1
             globalSeqNumber = globalSeqNumber + 5
@@ -424,8 +425,8 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Syn + Ack comment
-            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
-                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+            outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
