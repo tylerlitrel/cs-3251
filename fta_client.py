@@ -20,24 +20,24 @@ currentSegmentsOut = 0 # This field will be used to ensure the window size is no
 
 while True:
     # Check for the user to input commands
-    userInput = raw_input('Enter a command for the FTA client:\n')
+    userInput = input('Enter a command for the FTA client:\n')
 
     # Check for the type of command input by the user
-    command = user_input.split(' ')[0]
+    command = userInput.split(' ')[0]
     if command == 'connect':
         connect()
     elif command == 'get':
-        retrieveFile(user_input.split(' ')[1])
+        retrieveFile(userInput.split(' ')[1])
     elif command == 'put':
-        sendFile(user_input.split(' ')[1])
+        sendFile(userInput.split(' ')[1])
     elif command == 'window':
-        setWindowSize(int(user_input.split(' ')[1]))
+        setWindowSize(int(userInput.split(' ')[1]))
     elif command == 'disconnect':
         disconnect()
     elif command == 'exit':
         sys.exit()
     else:
-        print 'Not a valid command'
+        print('Not a valid command')
 
 # Connects to the FTA server running on the same IP host
 def connect():
@@ -48,7 +48,7 @@ def connect():
     socket.connectRTP(("127.0.0.1", clientPortNumber + 1))
 
     # Print a confirmation to the user
-    print 'Connection formed successfully'
+    print('Connection formed successfully')
 
 # This function retrieves the specified file from the server
 def retrieveFile(filename):
@@ -63,7 +63,7 @@ def retrieveFile(filename):
     file.write(fileByteArray)
 
     # Print a confirmation to the user
-    print 'File has been received from the server'
+    print('File has been received from the server')
 
 # This function sends a file to the server
 def sendFile(filename):
@@ -77,7 +77,7 @@ def sendFile(filename):
     socket.sendRTP(fileByteArray)
 
     # Print a confirmation to the user
-    print 'File has been sent to the server'
+    print('File has been sent to the server')
 
 # This function will be used to modify the window size being used by the application
 def setWindowSize(newWindowSize):
@@ -85,12 +85,12 @@ def setWindowSize(newWindowSize):
     windowSize = newWindowSize
     socket.setMaxWindowSize(newWindowSize)
     # Print a confirmation to the user
-    print 'The window size has been updated'
+    print('The window size has been updated')
 
 # This function is used to close the connection to the server
-def disconnect()
+def disconnect():
     # Disconnect from the server
     socket.closeRTPSocket()
 
     # Print a confirmation to the user
-    print 'Successfully disconnected from server'
+    print('Successfully disconnected from server')
