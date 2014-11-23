@@ -4,96 +4,96 @@ import hashlib
 import random
 
 class MyRTP:
-	# This is for caching out-of-order packets
-	recvCache = []
-	# This stores packets we have not received an Ack for
-	sendCache = []
-	# Our current sequence number
-	ourSeq = -1
-	# This is the sequence number we are expecting
-	expectedSeq = -1
-	# This is the file that we will write data to
-	fileName = ""
-	# This says whether we can accept connections
-	canListen = False
-	# This is default packet length in bytes. It can be changed
-	maxPacketLength = 65535
-	# This is the default window size
-	maxWindowSize = 1024
+    # This is for caching out-of-order packets
+    recvCache = []
+    # This stores packets we have not received an Ack for
+    sendCache = []
+    # Our current sequence number
+    ourSeq = -1
+    # This is the sequence number we are expecting
+    expectedSeq = -1
+    # This is the file that we will write data to
+    fileName = ""
+    # This says whether we can accept connections
+    canListen = False
+    # This is default packet length in bytes. It can be changed
+    maxPacketLength = 65535
+    # This is the default window size
+    maxWindowSize = 1024
     # This is the UDP socket that we will use underneath our RTP protocol
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
     headerFlags = bytearray.fromhex('80 40 20 10 50 C0 60')
-		
-	# this will set the window size
-	def setMaxWindowSize(newWindowSize):
-		maxWindowSize = newWindowSize
-		
-	# this will set the packet length
-	def setMaxPacketLength(newPacketLength):
-		maxPacketLength = newPacketLength
-	
-	# This will set the file name we will write to
-	def setFileName(newFileName):
-		fileName = newFileName
-		
-	# This method is used in order to create a socket
-	def createRTPSocket():
-		udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		
-	# This method associates a port on the machine with the socket
-	def bindRTPSocket(address):
-		# Extract the IP address and the port number from the address tuple
-		ipAddress = address[0]
-		portNumber = address[1]
-	
-	def formPacket(sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
-		outgoingPacket = bytearray()
-		for eachByte in sourcePort.to_bytes(2, byteorder = 'big'):
-			outgoingpacket.append(eachByte)
-		for eachByte in destinationPort.to_bytes(2, byteorder = 'big'):
-			outgoingPacket.append(eachByte)
-		for eachByte in seqNum.to_bytes(4, byteorder = 'big'):
-			outgoingPacket.append(eachByte)
-		for eachByte in ackNum.to_bytes(4, byteorder = 'big'):
-			outgoingPacket.append(eachByte)
-		for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
-			outgoingPacket.append(eachByte)
-		for eachByte in windowSize.to_bytes(4, byteorder = 'big'):
-			outgoingPacket.append(eachByte)
-		for eachByte in lengthOfPacket.to_bytes(4, byteorder = 'big'):
-			outgoingPacket.append(eachByte)
-		outgoingPacket.append(flagByte)
-		for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
-			outgoingPacket.append(eachByte)
-		for eachByte in payload:
-			outgoingPacket.append(eachByte)
+        
+    # this will set the window size
+    def setMaxWindowSize(newWindowSize):
+        maxWindowSize = newWindowSize
+        
+    # this will set the packet length
+    def setMaxPacketLength(newPacketLength):
+        maxPacketLength = newPacketLength
+    
+    # This will set the file name we will write to
+    def setFileName(newFileName):
+        fileName = newFileName
+        
+    # This method is used in order to create a socket
+    def createRTPSocket():
+        udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        
+    # This method associates a port on the machine with the socket
+    def bindRTPSocket(address):
+        # Extract the IP address and the port number from the address tuple
+        ipAddress = address[0]
+        portNumber = address[1]
+    
+    def formPacket(sourcePort, destinationPort, seqNum, ackNum, windowSize, lengthOfPacket, flagByte, payload):
+        outgoingPacket = bytearray()
+        for eachByte in sourcePort.to_bytes(2, byteorder = 'big'):
+            outgoingpacket.append(eachByte)
+        for eachByte in destinationPort.to_bytes(2, byteorder = 'big'):
+            outgoingPacket.append(eachByte)
+        for eachByte in seqNum.to_bytes(4, byteorder = 'big'):
+            outgoingPacket.append(eachByte)
+        for eachByte in ackNum.to_bytes(4, byteorder = 'big'):
+            outgoingPacket.append(eachByte)
+        for eachByte in (0).to_bytes(8, byteorder = 'big'): # put 0s in for the checksum for now
+            outgoingPacket.append(eachByte)
+        for eachByte in windowSize.to_bytes(4, byteorder = 'big'):
+            outgoingPacket.append(eachByte)
+        for eachByte in lengthOfPacket.to_bytes(4, byteorder = 'big'):
+            outgoingPacket.append(eachByte)
+        outgoingPacket.append(flagByte)
+        for eachByte in (0).to_bytes(3, byteorder = 'big'): # for the reserved portion
+            outgoingPacket.append(eachByte)
+        for eachByte in payload:
+            outgoingPacket.append(eachByte)
 
-		# Calculate the checksum and insert it into the packet
-		checksum = calculateChecksum(outgoingPacket)
-		index = 12
-		for eachByte in checksum:
-		   outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
-		   index++
-		return outgoingPacket
-	# This function is used to create a socket by the server to communicate with a specific client
-	def acceptRTPConnection():
-		'''
-		this can only be called if listen has been called (remember that boolean)
-			udp block on receive - ie it is waitin to here a SYN
-			once it gets the syn it sends a challenge which is a randomly
-			generated integer
-			udp block up in here 
-			timeout and try twice more then if still fail- kill it
-			waiting to receive the challenge response
-			if it is correct then we ack and connection is go
-			this wil return a socket up in this shiznit
-			if it is not correct then we go back to the top in some fashion
+        # Calculate the checksum and insert it into the packet
+        checksum = calculateChecksum(outgoingPacket)
+        index = 12
+        for eachByte in checksum:
+           outgoingPacket[index] = int.from_bytes(eachByte, byteorder = 'big')
+           index++
+        return outgoingPacket
+    # This function is used to create a socket by the server to communicate with a specific client
+    def acceptRTPConnection():
         '''
-		if !canListen:
-			return
+        this can only be called if listen has been called (remember that boolean)
+            udp block on receive - ie it is waitin to here a SYN
+            once it gets the syn it sends a challenge which is a randomly
+            generated integer
+            udp block up in here 
+            timeout and try twice more then if still fail- kill it
+            waiting to receive the challenge response
+            if it is correct then we ack and connection is go
+            this wil return a socket up in this shiznit
+            if it is not correct then we go back to the top in some fashion
+        '''
+        if !canListen:
+            return
         # Use a blocking UDP call to wait for a SYN packet to arrive
-		incomingMessage = bytearray()
+        incomingMessage = bytearray()
         packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
         # If the packet was a SYN packet, generate a random number for the CHALLENGE+ACK reply
         randomInt = random.randint(1, 4096)
@@ -115,7 +115,7 @@ class MyRTP:
 
             # Form the entire CHALLENGE+ACK packet
             outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -124,7 +124,7 @@ class MyRTP:
             return
 
         # Use a blocking UDP call to wait for the answer to come back
-		incomingMessage2 = bytearray()
+        incomingMessage2 = bytearray()
         packetLength, incomingAddress2 = udpSocket.recvfrom_into(incomingMessage2)
         udpSocket.settimeout(5)
         if incomingAddress2 == incomingAddress and int.from_bytes(incomingMessage2[33:37], byteorder = 'big') == randomInt:
@@ -144,7 +144,7 @@ class MyRTP:
 
             # Form the entire SYN+ACK packet
             outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[5], bytearray())
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[5], bytearray())
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
         else:
@@ -169,7 +169,7 @@ class MyRTP:
 
             # Form the entire ACK packet
             outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -180,18 +180,18 @@ class MyRTP:
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         return clientSocket
 
-	# This function is used to receive data
-	def receiveRTP(packetLength):
-		#handle lost, out of order, and corrupt packets
-		#sequence number should be somewhere
-		incomingMessage = bytearray()
-		thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
-		if !checkSumOkay(myArray):
-			return
-			
-			
-			
-		#closing stuff
+    # This function is used to receive data
+    def receiveRTP(packetLength):
+        #handle lost, out of order, and corrupt packets
+        #sequence number should be somewhere
+        incomingMessage = bytearray()
+        thisPackLen, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
+        if !checkSumOkay(myArray):
+            return
+            
+            
+            
+        #closing stuff
         #send ack
         # Check to see if the packet is a FIN packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[2] and checkSumOkay(incomingMessage)):
@@ -245,71 +245,71 @@ class MyRTP:
     if expectedSeq == sequenceNumberHere:
         #writeOutputfromcache will update the current sequence number
         #and be based on the last packet in the cache
-        sequenceNumber = writeOutputFromCache()			
+        sequenceNumber = writeOutputFromCache()         
     acknowledge(this)
 
-	def calculateChecksum(packet):
-		emptyArray = bytearray(8)
-		myBytes = packet[0:12] 
-		for i in emptyArray:
-			myBytes.append(i)
-		for i in packet[20:]:
-			myBytes.append(i)
-		hasher = hashlib.sha256()
-		hasher.update(myBytes)
-		checksum = hasher.digest()
-		return checksum[0:64]	
-		
-	# This makes sure the checksum is okay
-	def checkSumOkay(packet):
-		checksum = packet[12:20]
-		ourChecksum = calculateChecksum(packet)
-		return (checksum == ourChecksum)		
-		
-	# Adds data to cache and ensures ascending order of sequence numbers
-	def addToCache(packet):
-		cache.append(packet)
-		cache.sortBySequenceNumbers()
-		
-	# Writes output to appropriate file
-	def writeOutputFromCache():
-		for i in cache:   
-			#will update sequence per packet written and compare that to next packet
-			#eg get 1. have 2,3,4,7.  we only write 1234 and 7 stays cached
-			file = open(fileName, 'wb')
-			file.write(i)#may have to think about how to best get the data
-						#maybe a data object because I am all about that OOP
-	#somewhere figure out when the file is fully sent
-	
-	
-	# This function allows the socket to begin listening for connection requests
-	def listenRTP():
-		canListen = True
+    def calculateChecksum(packet):
+        emptyArray = bytearray(8)
+        myBytes = packet[0:12] 
+        for i in emptyArray:
+            myBytes.append(i)
+        for i in packet[20:]:
+            myBytes.append(i)
+        hasher = hashlib.sha256()
+        hasher.update(myBytes)
+        checksum = hasher.digest()
+        return checksum[0:64]   
+        
+    # This makes sure the checksum is okay
+    def checkSumOkay(packet):
+        checksum = packet[12:20]
+        ourChecksum = calculateChecksum(packet)
+        return (checksum == ourChecksum)        
+        
+    # Adds data to cache and ensures ascending order of sequence numbers
+    def addToCache(packet):
+        cache.append(packet)
+        cache.sortBySequenceNumbers()
+        
+    # Writes output to appropriate file
+    def writeOutputFromCache():
+        for i in cache:   
+            #will update sequence per packet written and compare that to next packet
+            #eg get 1. have 2,3,4,7.  we only write 1234 and 7 stays cached
+            file = open(fileName, 'wb')
+            file.write(i)#may have to think about how to best get the data
+                        #maybe a data object because I am all about that OOP
+    #somewhere figure out when the file is fully sent
+    
+    
+    # This function allows the socket to begin listening for connection requests
+    def listenRTP():
+        canListen = True
 
 
-	# This function connects to the specified IP address and port
-	def connectRTP(address):
-		# Extract the IP address and the port number from the address tuple
-		ipAddress = address[0]
-		portNumber = address[1]
+    # This function connects to the specified IP address and port
+    def connectRTP(address):
+        # Extract the IP address and the port number from the address tuple
+        ipAddress = address[0]
+        portNumber = address[1]
 
-		# Perform the initial handshake to set up the connection
+        # Perform the initial handshake to set up the connection
         '''
-		send a syn to the server
-		udp block
-		wait for the challenge
-		timeout and try twice more then if still fail- kill it
-		send the challenge back
-		wait for ack
-		timeout and try twice more then if still fail- kill it
-		get ack and connect to given socket
-		dunzo
+        send a syn to the server
+        udp block
+        wait for the challenge
+        timeout and try twice more then if still fail- kill it
+        send the challenge back
+        wait for ack
+        timeout and try twice more then if still fail- kill it
+        get ack and connect to given socket
+        dunzo
         '''
 
         # First, send a SYN packet to the server
         # Form the entire SYN packet
         outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  0,  
-			0, maxWindowSize,  32, headerFlags[0], bytearray())
+            0, maxWindowSize,  32, headerFlags[0], bytearray())
 
         # Send the SYN packet
         udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -334,7 +334,7 @@ class MyRTP:
 
             # Form the entire CHALLENGE+ACK packet
             outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -363,8 +363,8 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Syn + Ack comment
-			outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-				outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+                outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the SYN+ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
@@ -372,32 +372,32 @@ class MyRTP:
             # The packet was not a CHALLENGE+ACK or the packet was corrupt 
             return
 
-	# This function will be used to send data
-	def sendRTP(message):
-		#simple?
-		loop through byte array
-		divide the length by (packetsize*windowsize)
-		while(sendCache is not empty and notallpackets are sent):
-			s
-		
-		
-		
-		
-		
-	# This function will be used to close a connection
-	def closeRTPSocket():
+    # This function will be used to send data
+    def sendRTP(message):
+        #simple?
+        loop through byte array
+        divide the length by (packetsize*windowsize)
+        while(sendCache is not empty and notallpackets are sent):
+            s
+        
+        
+        
+        
+        
+    # This function will be used to close a connection
+    def closeRTPSocket():
         # Send the FIN packet
-		
-		'''  
-		##
-		## figure out where variables come from
-		##
-		##
-		'''
-		
+        
+        '''  
+        ##
+        ## figure out where variables come from
+        ##
+        ##
+        '''
+        
         outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
             outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
-		
+        
         # Send the FIN packet
         udpSocket.sendto(outgoingPacket, incomingAddress)
 
@@ -433,7 +433,7 @@ class MyRTP:
             # Close the socket
             canListen = false
             udpSocket.close()
-		# Check if the packet is a FIN
+        # Check if the packet is a FIN
         if(incomingMessage[28] == headerFlags[2] and checkSumOkay(incomingMessage)):
             # Send an ACK
             # Retrieve the needed information from the incoming packet
@@ -466,7 +466,7 @@ class MyRTP:
                 # Close the socket
                 canListen = false
                 udpSocket.close()
-		# Check if the packet is a FIN+ACK
+        # Check if the packet is a FIN+ACK
         if(incomingMessage[28] == headerFlags[6] and checkSumOkay(incomingMessage)):
             # Send an ACK
             # Retrieve the needed information from the incoming packet
@@ -499,5 +499,5 @@ class MyRTP:
             # Close the socket
             canListen = false
             udpSocket.close()
-		
+        
 need to create a packet object with sequence and raw data
