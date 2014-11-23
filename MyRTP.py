@@ -387,6 +387,14 @@ class MyRTP:
 	# This function will be used to close a connection
 	def closeRTPSocket():
         # Send the FIN packet
+		
+		'''  
+		##
+		## figure out where variables come from
+		##
+		##
+		'''
+		
         outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
             outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
 		
@@ -398,7 +406,7 @@ class MyRTP:
         packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
 
         # Check if the packet is an ACK
-        if(incomingMessage[29] == headerFlags[1] and checkSumOkay(incomingMessage)):
+        if(incomingMessage[28] == headerFlags[1] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
             incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
