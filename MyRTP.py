@@ -44,7 +44,11 @@ class MyRTP:
     udpSocket = None
     # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
     headerFlags = bytearray.fromhex('80 40 20 10 50 C0 60 08')
-        
+    # this is for net emu
+    emuIpNumber = ''  
+    # this is the port
+    emuPortNumber = 0
+    
     # this will set the window size
     def setMaxWindowSize(newWindowSize):
         maxWindowSize = newWindowSize
@@ -103,7 +107,7 @@ class MyRTP:
            index = index + 1
         return outgoingPacket
     # This function is used to create a socket by the server to communicate with a specific client
-    def acceptRTPConnection(self, portNo, netEmu):
+    def acceptRTPConnection(self, localPort, netEmuIp, netEmuPort):
         '''
         this can only be called if listen has been called (remember that boolean)
             udp block on receive - ie it is waitin to here a SYN
@@ -119,7 +123,11 @@ class MyRTP:
 
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        udpSocket.bind(('',portNo))
+        udpSocket.bind(('',localPort))
+        global emuIpNumber
+        global emuPortNumber
+        emuIpNumber = netEmuIp
+        emuPortNumber = netEmuPort
         if self.canListen is False:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
@@ -145,7 +153,7 @@ class MyRTP:
                 goutgoingAckNumberlobalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         else:
             # The packet was not a SYN or the packet was corrupt 
             return False
@@ -169,7 +177,7 @@ class MyRTP:
                 globalAckNumber, maxWindowSize, outgoingPacketLength, headerFlags[5], bytearray())
 
             # Send the SYN+ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         else:
             return False
 
@@ -235,7 +243,7 @@ class MyRTP:
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
 
             # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         
             #send fin
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
@@ -254,7 +262,7 @@ class MyRTP:
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], byteArray())
 
             # Send the packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
             
             # Wait for an ACK packet
             incomingMessage = bytearray()
@@ -285,7 +293,7 @@ class MyRTP:
                         outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], byteArray())
 
                     # Send the ACK packet
-                    udpSocket.sendto(outgoingPacket, incomingAddress)
+                    udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
                     for eachByte in incomingMessage[32:]:
                         if(numberOfBytes > 0):
                             returnData.append(eachByte)
@@ -368,7 +376,7 @@ class MyRTP:
             0, self.maxWindowSize,  32, self.headerFlags[0], bytearray())
 
         # Send the SYN packet
-        udpSocket.sendto(outgoingPacket, ("127.0.0.1", self.globalDestinationPort))
+        udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         
         # Use a blocking UDP call to wait for the CHALLENGE+ACK packet to come back
         incomingMessage = bytearray()
@@ -388,7 +396,7 @@ class MyRTP:
                 globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], int.from_bytes(incomingChallengeNumber, byteorder = 'big'))
 
             # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         else:
             # The packet was not a CHALLENGE+ACK or the packet was corrupt 
             return False
@@ -412,7 +420,7 @@ class MyRTP:
                 globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the SYN+ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             return True
         else:
@@ -445,7 +453,7 @@ class MyRTP:
                 globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], message[(numPacketsSent * (maxPacketLength - 32)):(numPacketsSent * (maxPacketLength - 32) + outgoingPacketLength - 32)])
 
             # Send the packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK for the packet
             ackPacket = bytearray()
@@ -472,8 +480,7 @@ class MyRTP:
             outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[2], bytearray())
         
         # Send the FIN packet
-        udpSocket.sendto(outgoingPacket, incomingAddress)
-
+        udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         # Wait for the reply to the FIN
         incomingMessage = bytearray()
         packetLength, incomingAddress = udpSocket.recvfrom_into(incomingMessage)
@@ -507,7 +514,7 @@ class MyRTP:
                     outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
                 # Send the Ack attack packet
-                udpSocket.sendto(outgoingPacket, incomingAddress)
+                udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
                 # Wait for a timeout period
                 time.sleep(5)
@@ -536,7 +543,7 @@ class MyRTP:
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK
             incomingMessage = bytearray()
@@ -569,7 +576,7 @@ class MyRTP:
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
 
             # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, incomingAddress)
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK
             incomingMessage = bytearray()
