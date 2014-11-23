@@ -2,7 +2,18 @@
 
 import hashlib
 import random
-
+def calculateChecksum( packet):
+        emptyArray = bytearray(8)
+        myBytes = packet[0:12] 
+        for i in emptyArray:
+            myBytes.append(i)
+        for i in packet[20:]:
+            myBytes.append(i)
+        hasher = hashlib.sha256()
+        hasher.update(myBytes)
+        checksum = hasher.digest()
+        return checksum[0:64]   
+        
 class MyRTP:
     # This is for caching out-of-order packets
     recvCache = []
@@ -55,18 +66,6 @@ class MyRTP:
         ipAddress = address
         portNumber = portNum
 
-    def calculateChecksum(self, packet):
-        emptyArray = bytearray(8)
-        myBytes = packet[0:12] 
-        for i in emptyArray:
-            myBytes.append(i)
-        for i in packet[20:]:
-            myBytes.append(i)
-        hasher = hashlib.sha256()
-        hasher.update(myBytes)
-        checksum = hasher.digest()
-        return checksum[0:64]   
-        
     # This makes sure the checksum is okay
     def checkSumOkay(self, packet):
         checksum = packet[12:20]
