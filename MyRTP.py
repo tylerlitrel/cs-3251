@@ -109,20 +109,18 @@ class MyRTP:
         # Check to see if the packet is a SYN packet (indicated in 28th byte of header)
         if(incomingMessage[28] == headerFlags[0] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
+            globalSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
+            globalAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            globalDestinationPort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
+            globalSourcePort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
 
             # Modify the fields for the outgoing CHALLENGE+ACK packet
             outgoingSeqNumber = incomingAckNumber
             outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
             outgoingPacketLength = 32 + 4
 
             # Form the entire CHALLENGE+ACK packet
-            outgoingPacket = formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingPacket = formPacket(globalSourcePort, globalDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[4], int.from_bytes(randomInt, byteorder = 'big'))
 
             # Send the CHALLENGE+ACK packet
