@@ -47,6 +47,21 @@ def terminateServer():
     global socket
     socket.closeRTPSocket()
 
+# This function will be used to accept commands coming from the client
+def waitForCommands():
+    # Get the command from the client
+    command = (socket.receiveRTP(800000)).decode('utf-8')
+
+    # Check to see what the command is
+    if command is None:
+        print('connection was closed')        
+    elif str(command) == 'serverToClient':
+        print('retrieve file from server')
+    elif str(command) == 'clientToServer':
+        print('upload file to server')
+    else:
+        print('invalid command received')
+
     
 initializeServer(netEmuPort, netEmuIP, serverPortNumber)
 
@@ -74,4 +89,4 @@ while True:
     socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
 
     # Once a client connects, wait for commands
-    command = socket.receiveRTP(800000)
+    waitForCommands()

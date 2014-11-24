@@ -1,6 +1,7 @@
 # This file will contain all the logic necessary for the RTP protocol
 
 import hashlib
+import math
 import random
 import socket
 import time
@@ -291,7 +292,7 @@ class MyRTP:
         else:
             ''' edge case where fin packet is bad and we go in here anyways. will add while loop at top or incorporate this some how'''
             while(True):
-                if(checksumOkay(incomingMessage) is False):
+                if(checkSumOkay(incomingMessage) is False):
                     a=1    #do nothing
                 else:
                     incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
@@ -307,9 +308,10 @@ class MyRTP:
 
                     # Form the entire packet
                     outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                        outgoingAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], bytearray())
+                        outgoingAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
                     # Send the ACK packet
+                    print('sending an ACK on line 314ish')
                     udpSocket.sendto(outgoingPacket, (emuIpNumber, emuPortNumber))
                     for eachByte in incomingMessage[32:]:
                         if(numberOfBytes > 0):
@@ -325,7 +327,7 @@ class MyRTP:
                             
                     if numberOfBytes <= 0:
                         break
-                    if(incomingMessage[28] == headerFlag[7]):
+                    if(incomingMessage[28] == self.headerFlags[7]):
                         break
                 incomingMessage = udpSocket.recv(self.maxPacketLength)
                 globalSeqNumber = globalSeqNumber + 1
@@ -461,33 +463,37 @@ class MyRTP:
         while(sendCache is not empty and notallpackets are sent):
             s
         '''
+        print('starting our send method')
+
         # Give access to the global variables
         global globalAckNumber
         global globalSeqNumber
 
         # Figure out the number of packets needed to send the message
         messageLength = len(message)
-        numPacketsNeeded = math.ceil(messageLength / (maxPacketLength - 32))
+        numPacketsNeeded = math.ceil(messageLength / (self.maxPacketLength - 32))
         
         numPacketsSent = 0
         while numPacketsSent < numPacketsNeeded:
             # Modify the fields for the outgoing packet
-            if(messageLength > maxPacketLength - 32):
-                outgoingPacketLength = maxPacketLength
+            if(messageLength > self.maxPacketLength - 32):
+                outgoingPacketLength = self.maxPacketLength
             else:
                 outgoingPacketLength = messageLength + 32
 
             # Form the packet
-            outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort, globalSeqNumber,  
-                globalAckNumber, maxWindowSize,  outgoingPacketLength, headerFlags[1], message[(numPacketsSent * (maxPacketLength - 32)):(numPacketsSent * (maxPacketLength - 32) + outgoingPacketLength - 32)])
+            outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort, globalSeqNumber,  
+                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], message[(numPacketsSent * (self.maxPacketLength - 32)):(numPacketsSent * (self.maxPacketLength - 32) + outgoingPacketLength - 32)])
 
             # Send the packet
+            print('sending a packet on line 488ish')
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK for the packet
-            ackPacket = bytearray()
-            packetLength, address = udpSocket.revcfrom_into(ackPacket)
-            if(ackPacket[28] == headerFlags[1] and int.from_bytes(ackPacket[8:12], byteorder = 'big') == globalSeqNumber + messageLength - 32 and checkSumOkay(ackPacket)):
+            print('waiting for an ack on 492is')
+            ackPacket = udpSocket.recv(self.maxPacketLength)
+            if(ackPacket[28] == self.headerFlags[1] and int.from_bytes(ackPacket[8:12], byteorder = 'big') == globalSeqNumber + messageLength - 32 and checkSumOkay(ackPacket)):
+                print('received an ACK with correct ack number - line 496ish')
                 # Increment the number of packets sent
                 numPacketsSent = numPacketsSent + 1
                 messageLength = messageLength - outgoingPacketLength + 32

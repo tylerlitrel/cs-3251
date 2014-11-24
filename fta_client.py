@@ -27,7 +27,8 @@ def connect():
 # This function retrieves the specified file from the server
 def retrieveFile(filename):
     # First tell the server that it needs to send a file
-    socket.sendRTP('serverToClient')
+    socket.sendRTP(bytearray('serverToClient', 'utf-8'))
+    print('sent request for file to server')
 
     # Receive the file from the server
     fileByteArray = receiveRTP(2000000000)
@@ -42,7 +43,7 @@ def retrieveFile(filename):
 # This function sends a file to the server
 def sendFile(filename):
     # First tell the server that it is receiving a file
-    socket.sendRTP('clientToServer')
+    socket.sendRTP(bytearray('clientToServer', 'utf-8'))
 
     # Load the file into a byte array
     fileByteArray = open(filename, 'rb').read()
