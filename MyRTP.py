@@ -507,65 +507,31 @@ class MyRTP:
         # Give access to the global variables
         global globalAckNumber
         global globalSeqNumber
+        global canListen
         
-        outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  self.globalSeqNumber,  
-            self.globalAckNumber, self.maxWindowSize, 32, self.headerFlags[2], bytearray())
+        outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
+            globalAckNumber, self.maxWindowSize, 32, self.headerFlags[2], bytearray())
         
         # Send the FIN packet
         udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+
         # Wait for the reply to the FIN
         incomingMessage = udpSocket.recv(self.maxPacketLength)
 
-        # Check if the packet is an ACK
-        if(incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
-            
-            ## needs to wait for a fin to send an ack
-            
-            incomingMessage = udpSocket.recv(self.maxPacketLength)
-            
-            #hfs need some wort of while loop in case we get a non fin. also we need this in many other places possibly
-            
-            if(incomingMessage[28] == self.headerFlags[2] and checkSumOkay(incomingMessage)):
-                        
-                # Retrieve the needed information from the incoming packet
-                incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-                incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-
-                # Modify the fields for the outgoing ACK packet
-                outgoingSeqNumber = incomingAckNumber
-                outgoingAckNumber = incomingSeqNumber + 1
-                outgoingPacketLength = 32
-
-                # Send an Ack
-                outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  outgoingSeqNumber,  
-                    outgoingAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
-
-                # Send the Ack attack packet
-                udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
-
-                # Wait for a timeout period
-                time.sleep(5)
-
-                # Close the socket
-                canListen = False
-                udpSocket.close()
         # Check if the packet is a FIN
         if(incomingMessage[28] == self.headerFlags[2] and checkSumOkay(incomingMessage)):
             # Send an ACK
             # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-
-            # Modify the fields for the outgoing ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
+            globalSeqNumber = globalSeqNumber + 1
+            globalAckNumber = globalAckNumber + 1
             outgoingPacketLength = 32
 
             # Send a ACK 
-            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
+            outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
             # Send the ACK packet
+            print(outgoingPacket)
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK
@@ -577,25 +543,43 @@ class MyRTP:
                 # Close the socket
                 canListen = False
                 udpSocket.close()
+        # Check if the packet is an ACK
+        if(incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
+            ## needs to wait for a fin to send an ack
+            incomingMessage = udpSocket.recv(self.maxPacketLength)
+            
+            #hfs need some wort of while loop in case we get a non fin. also we need this in many other places possibly
+            
+            if(incomingMessage[28] == self.headerFlags[2] and checkSumOkay(incomingMessage)):
+                # Retrieve the needed information from the incoming packet
+                globalSeqNumber = globalSeqNumber + 1
+                globalAckNumber = globalAckNumber + 1
+                outgoingPacketLength = 32
+
+                # Send an Ack
+                outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
+                    globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
+
+                # Send the Ack attack packet
+                udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+
+                # Wait for a timeout period
+                time.sleep(5)
+
+                # Close the socket
+                canListen = False
+                udpSocket.close()
         # Check if the packet is a FIN+ACK
         if(incomingMessage[28] == self.headerFlags[6] and checkSumOkay(incomingMessage)):
             # Send an ACK
             # Retrieve the needed information from the incoming packet
-            incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
-            incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
-            incomingSourcePort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
-            incomingDestinationPort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
-
-            # Modify the fields for the outgoing ACK packet
-            outgoingSeqNumber = incomingAckNumber
-            outgoingAckNumber = incomingSeqNumber + 1
-            outgoingSourcePort = incomingDestinationPort
-            outgoingDestinationPort = incomingSourcePort
+            globalSeqNumber = globalSeqNumber + 1
+            globalAckNumber = globalAckNumber + 1
             outgoingPacketLength = 32
 
             # Send a ACK 
-            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
-                outgoingAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
+            outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
+                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
             # Send the ACK packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
