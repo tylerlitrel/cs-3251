@@ -13,6 +13,7 @@ socket = None
 windowSize = 100
 currentSegmentsOut = 0 # This field will be used to ensure the window size is not exceeded
 
+isConnected = False
 # Get the command line arguments when the fta-server.py script is run, and initialize the server
 serverPortNumber = int(sys.argv[1])
 netEmuIP = sys.argv[2]
@@ -119,7 +120,8 @@ while True:
     print(serverPortNumber)
     print(netEmuIP)
     print(netEmuPort)
-    socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
-
-    # Once a client connects, wait for commands
-    waitForCommands()
+    if(isConnected):
+        # Once a client connects, wait for commands
+        waitForCommands()   
+    else:    
+        isConnected = socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
