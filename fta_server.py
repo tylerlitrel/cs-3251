@@ -51,6 +51,7 @@ def terminateServer():
 def waitForCommands():
     # Get the command from the client
     command = (socket.receiveRTP(800000)).decode('utf-8')
+    print('received command from client')
 
     # Check to see what the command is
     if command is None:

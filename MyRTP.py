@@ -55,7 +55,7 @@ class MyRTP:
     globalDestinationPort = 3
     # This is the UDP socket that we will use underneath our RTP protocol
     udpSocket = None
-    # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK
+    # This byte array contains the following bytes in order for use in the packet: SYN, ACK, FIN, CNG, CNG+ACK, SYN+ACK, FIN+ACK, End of message
     headerFlags = bytearray.fromhex('80 40 20 10 50 C0 60 08')
     # this is for net emu
     emuIpNumber = ''  
@@ -343,7 +343,9 @@ class MyRTP:
                         break
                     if(incomingMessage[28] == self.headerFlags[7]):
                         break
+                print('waiting for another packet on line 346ish')
                 incomingMessage = udpSocket.recv(self.maxPacketLength)
+                print('received another packet on line 348ish')
                 globalSeqNumber = globalSeqNumber + 1
                 globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') + int.from_bytes(incomingMessage[24:28], byteorder = 'big') - 32
             return returnData
@@ -504,12 +506,14 @@ class MyRTP:
             # Modify the fields for the outgoing packet
             if(messageLength > self.maxPacketLength - 32):
                 outgoingPacketLength = self.maxPacketLength
+                outgoingFlag = self.headerFlags[1]
             else:
                 outgoingPacketLength = messageLength + 32
+                outgoingFlag = self.headerFlags[7]
 
             # Form the packet
             outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort, globalSeqNumber,  
-                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], message[(numPacketsSent * (self.maxPacketLength - 32)):(numPacketsSent * (self.maxPacketLength - 32) + outgoingPacketLength - 32)])
+                globalAckNumber, self.maxWindowSize,  outgoingPacketLength, outgoingFlag, message[(numPacketsSent * (self.maxPacketLength - 32)):(numPacketsSent * (self.maxPacketLength - 32) + outgoingPacketLength - 32)])
 
             # Send the packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
