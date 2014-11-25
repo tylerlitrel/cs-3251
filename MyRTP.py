@@ -323,6 +323,8 @@ class MyRTP:
                         outgoingAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
                     # Send the ACK packet
+                    print('ack number for ack packet: ' + str(outgoingAckNumber))
+
                     print('sending an ACK on line 314ish')
                     udpSocket.sendto(outgoingPacket, (emuIpNumber, emuPortNumber))
                     for eachByte in incomingMessage[32:]:
@@ -510,14 +512,15 @@ class MyRTP:
                 globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], message[(numPacketsSent * (self.maxPacketLength - 32)):(numPacketsSent * (self.maxPacketLength - 32) + outgoingPacketLength - 32)])
 
             # Send the packet
-            print('sending a packet on line 488ish')
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
             # Wait for an ACK for the packet
-            print('waiting for an ack on 492is')
             ackPacket = udpSocket.recv(self.maxPacketLength)
-            if(ackPacket[28] == self.headerFlags[1] and int.from_bytes(ackPacket[8:12], byteorder = 'big') == globalSeqNumber + messageLength - 32 and checkSumOkay(ackPacket)):
-                print('received an ACK with correct ack number - line 496ish')
+
+            print('expected ack number at end of send loop: ' + str(globalSeqNumber + outgoingPacketLength - 32))
+
+            if(ackPacket[28] == self.headerFlags[1] and int.from_bytes(ackPacket[8:12], byteorder = 'big') == globalSeqNumber + outgoingPacketLength - 32 and checkSumOkay(ackPacket)):
+                print('received an ACK with correct ack number - line 521ish')
                 # Increment the number of packets sent
                 numPacketsSent = numPacketsSent + 1
                 messageLength = messageLength - outgoingPacketLength + 32

@@ -31,7 +31,7 @@ def retrieveFile(filename):
     print('sent request for file to server')
 
     # Receive the file from the server
-    fileByteArray = receiveRTP(2000000000)
+    fileByteArray = socket.receiveRTP(2000000000)
 
     # Write the file to the directory
     file = open(filename, 'wb')
