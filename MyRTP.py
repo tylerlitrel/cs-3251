@@ -157,13 +157,16 @@ class MyRTP:
         if(incomingMessage[28] == self.headerFlags[0] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             globalAckNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big') # Sequence number from incoming packet
-            globalSeqNumber = 0 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
+            globalSeqNumber = 0
             globalDestinationPort = int.from_bytes(incomingMessage[0:2], byteorder = 'big')
             globalSourcePort = int.from_bytes(incomingMessage[2:4], byteorder = 'big')
 
             # Modify the fields for the outgoing CHALLENGE+ACK packet
             globalAckNumber = globalAckNumber + 1
             outgoingPacketLength = 32 + 4
+
+            print('ack number for CHALLENGE+ACK: ' + str(globalAckNumber))
+            print('seq number for CHALLENGE+ACK: ' + str(globalSeqNumber))
 
             # Form the entire CHALLENGE+ACK packet
             outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber, globalAckNumber, self.maxWindowSize, outgoingPacketLength, self.headerFlags[4], randomInt.to_bytes(4, byteorder = 'big'))
@@ -184,8 +187,11 @@ class MyRTP:
             globalSeqNumber = globalSeqNumber + 4 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
 
             # Modify the fields for the outgoing SYN+ACK packet
-            globalAckNumber = globalAckNumber + 4
+            globalAckNumber = globalAckNumber + 5
             outgoingPacketLength = 32
+
+            print('ack number for SYN+ACK: ' + str(globalAckNumber))
+            print('seq number for SYN+ACK: ' + str(globalSeqNumber))
 
             # Form the entire SYN+ACK packet
             outgoingPacket = self.formPacket(globalSourcePort, globalDestinationPort,  globalSeqNumber,  
@@ -221,6 +227,12 @@ class MyRTP:
             # Send the ACK packet
             udpSocket.sendto(outgoingPacket, incomingAddress)
             '''
+            # Increment the ACK and SEQ number
+            globalAckNumber = globalAckNumber + 1
+            globalSeqNumber = globalSeqNumber + 1
+
+            print('ack number at end of accept: ' + str(globalAckNumber))
+            print('seq number at end of accept: ' + str(globalSeqNumber))
 
             # The handshake has been successfully completed, return true 
             return True
@@ -402,7 +414,8 @@ class MyRTP:
             0, self.maxWindowSize,  32, self.headerFlags[0], bytearray())
 
         # Send the SYN packet
-        print(outgoingPacket)
+        print('ack number for SYN: ' + str(globalAckNumber))
+        print('seq number for SYN: ' + str(globalSeqNumber))
         udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
         print('sent first packet')
         
@@ -412,7 +425,7 @@ class MyRTP:
         # Check to see if the packet is a CHALLENGE+ACK packet (indicated in 28th byte of header)
         if(incomingMessage[28] == self.headerFlags[4] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
-            globalAckNumber = globalAckNumber + 5
+            globalAckNumber = globalAckNumber + 4
             globalSeqNumber = globalSeqNumber + 1 # int.from_bytes(incomingMessage[8:12], byteorder = 'big')
             incomingChallengeNumber = int.from_bytes(incomingMessage[32:36], byteorder = 'big')
 
@@ -420,6 +433,8 @@ class MyRTP:
             outgoingPacketLength = 32 + 4
 
             # Form the entire ACK packet
+            print('ack number for answer: ' + str(globalAckNumber))
+            print('seq number for answer: ' + str(globalSeqNumber))
             outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
                 globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], incomingChallengeNumber.to_bytes(4, byteorder = 'big'))
 
@@ -437,21 +452,30 @@ class MyRTP:
         if(incomingMessage2[28] == self.headerFlags[5] and checkSumOkay(incomingMessage)):
             # Retrieve the needed information from the incoming packet
             globalAckNumber = globalAckNumber + 1
-            globalSeqNumber = globalSeqNumber + 5
+            globalSeqNumber = globalSeqNumber + 4
 
             # Modify the fields for the outgoing ACK packet
             outgoingPacketLength = 32
 
-            # Syn + Ack comment
+            print('ack number for ACK: ' + str(globalAckNumber))
+            print('seq number for ACK: ' + str(globalSeqNumber))
+
+            # Form the ACK Packet
             outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
                 globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
-            # Send the SYN+ACK packet
+            # Send the ACK packet
             udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+
+            # Increment the sequence number after the final ACK was sent
+            globalSeqNumber = globalSeqNumber + 1
+
+            print('ack number at end of connect: ' + str(globalAckNumber))
+            print('seq number at end of connect: ' + str(globalSeqNumber))
 
             return True
         else:
-            # The packet was not a CHALLENGE+ACK or the packet was corrupt 
+            # The packet was not a SYN+ACK or the packet was corrupt 
             return False
 
     # This function will be used to send data
