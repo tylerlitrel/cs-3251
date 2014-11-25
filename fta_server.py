@@ -47,6 +47,31 @@ def terminateServer():
     global socket
     socket.closeRTPSocket()
 
+# This function will be used to retrieve a file from the client
+def receiveFile(command):
+    # Receive the file from the client
+    fileByteArray = socket.receiveRTP(800000)
+    
+    # Determine the file name
+    fileName = command.decode('utf-8').split(' ')[1]
+
+    # Write the file to the directory
+    file = open('new' + fileName, 'wb')
+    file.write(fileByteArray)
+
+    print('file received by server successfully')
+
+# This function will be used to send a file from the server to the client
+def sendFile(command):
+    # Read the file from the directory
+    fileName = command.decode('utf-8').split(' ')[1]
+    fileByteArray = open(fileName, 'rb').read()
+
+    # Send the file to the server
+    socket.sendRTP(fileByteArray)
+
+    print('file sent by server successfully')
+
 # This function will be used to accept commands coming from the client
 def waitForCommands():
     # Get the command from the client
@@ -56,10 +81,12 @@ def waitForCommands():
     # Check to see what the command is
     if command is None:
         print('connection was closed')        
-    elif command.decode('utf-8') == 'serverToClient':
+    elif command.decode('utf-8').split(' ')[0] == 'get':
         print('retrieve file from server')
-    elif command.decode('utf-8') == 'clientToServer':
+        sendFile(command)
+    elif command.decode('utf-8').split(' ')[0] == 'post':
         print('upload file to server')
+        receiveFile(command)
     else:
         print('invalid command received')
 

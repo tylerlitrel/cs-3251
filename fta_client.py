@@ -25,28 +25,28 @@ def connect():
     print('Connection formed successfully')
 
 # This function retrieves the specified file from the server
-def retrieveFile(filename):
+def retrieveFile(command):
     # First tell the server that it needs to send a file
-    socket.sendRTP(bytearray('serverToClient', 'utf-8'))
+    socket.sendRTP(bytearray(command, 'utf-8'))
     print('sent request for file to server')
 
     # Receive the file from the server
     fileByteArray = socket.receiveRTP(2000000000)
 
     # Write the file to the directory
-    file = open(filename, 'wb')
+    file = open('new' + command.split(' ')[1], 'wb')
     file.write(fileByteArray)
 
     # Print a confirmation to the user
     print('File has been received from the server')
 
 # This function sends a file to the server
-def sendFile(filename):
+def sendFile(command):
     # First tell the server that it is receiving a file
-    socket.sendRTP(bytearray('clientToServer', 'utf-8'))
+    socket.sendRTP(bytearray(command, 'utf-8'))
 
     # Load the file into a byte array
-    fileByteArray = open(filename, 'rb').read()
+    fileByteArray = open(command.split(' ')[1], 'rb').read()
 
     # Send the file to the server
     socket.sendRTP(fileByteArray)
@@ -90,9 +90,9 @@ while True:
     if command == 'connect':
         connect()
     elif command == 'get':
-        retrieveFile(userInput.split(' ')[1])
-    elif command == 'put':
-        sendFile(userInput.split(' ')[1])
+        retrieveFile(userInput)
+    elif command == 'post':
+        sendFile(userInput)
     elif command == 'window':
         setWindowSize(int(userInput.split(' ')[1]))
     elif command == 'disconnect':
