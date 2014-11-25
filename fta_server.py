@@ -50,15 +50,15 @@ def terminateServer():
 # This function will be used to accept commands coming from the client
 def waitForCommands():
     # Get the command from the client
-    command = (socket.receiveRTP(800000)).decode('utf-8')
+    command = socket.receiveRTP(800000)
     print('received command from client')
 
     # Check to see what the command is
     if command is None:
         print('connection was closed')        
-    elif str(command) == 'serverToClient':
+    elif command.decode('utf-8') == 'serverToClient':
         print('retrieve file from server')
-    elif str(command) == 'clientToServer':
+    elif command.decode('utf-8') == 'clientToServer':
         print('upload file to server')
     else:
         print('invalid command received')
