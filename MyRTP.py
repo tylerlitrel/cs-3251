@@ -131,7 +131,7 @@ class MyRTP:
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udpSocket.bind(('',localPort))
-        udpSocket.settimeout(7)
+        udpSocket.settimeout(None)
         global emuIpNumber
         global emuPortNumber
         emuIpNumber = netEmuIp
@@ -142,7 +142,10 @@ class MyRTP:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
         print('listening for connections')
-        incomingMessage = udpSocket.recv(self.maxPacketLength)
+        try:
+            incomingMessage = udpSocket.recv(self.maxPacketLength)
+        except:
+            incomingMessage = None
         print('got first packet')
         print(incomingMessage)
         # If the packet was a SYN packet, generate a random number for the CHALLENGE+ACK reply
@@ -390,7 +393,7 @@ class MyRTP:
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udpSocket.bind(('',portNum))
-        udpSocket.settimeout(7)
+        udpSocket.settimeout(None)
 
         # Give access to the global variables
         global globalAckNumber
