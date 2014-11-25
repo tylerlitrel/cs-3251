@@ -7,7 +7,7 @@
 # Import the file containing the functions for the RTP protocol and any other necessary modules
 import MyRTP
 import sys
-
+from threading import Timer
 # Create a variable to contain a socket and other necessary variables
 socket = None
 windowSize = 100
@@ -97,8 +97,13 @@ initializeServer(netEmuPort, netEmuIP, serverPortNumber)
 
 while True:
     # Check for the user to input commands
+    timeout = 5
+    t = Timer(timeout, print, ['Sorry, times up'])
+    t.start()
+    prompt = "You have %d seconds to choose the correct answer...\n" % timeout
     userInput = input('Enter a command for the FTA Server:\n')
-
+    t.cancel()
+    
     # Check for the type of command input by the user
     command = userInput.split(' ')[0]
     if command == 'terminate':
