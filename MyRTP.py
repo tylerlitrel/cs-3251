@@ -131,6 +131,7 @@ class MyRTP:
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udpSocket.bind(('',localPort))
+        udpSocket.settimeout(7)
         global emuIpNumber
         global emuPortNumber
         emuIpNumber = netEmuIp
@@ -179,7 +180,6 @@ class MyRTP:
 
         # Use a blocking UDP call to wait for the answer to come back
         incomingMessage2 = udpSocket.recv(self.maxPacketLength)
-        udpSocket.settimeout(5)
         if int.from_bytes(incomingMessage2[33:37], byteorder = 'big') == randomInt:
             # We received the correct answer to the challenge
             # Retrieve the needed information from the incoming packet
@@ -204,7 +204,6 @@ class MyRTP:
 
         # Use a blocking UDP call to wait for the ACK to come from the client
         incomingMessage3 = udpSocket.recv(self.maxPacketLength)
-        udpSocket.settimeout(5)
         if incomingMessage3[28] == self.headerFlags[1]:
             '''
             # Retrieve the needed information from the incoming packet
@@ -248,7 +247,6 @@ class MyRTP:
         
         #handle lost, out of order, and corrupt packets
         #sequence number should be somewhere
-        udpSocket.settimeout(None)
         incomingMessage = udpSocket.recv(self.maxPacketLength)
             
         returnData = bytearray()
@@ -392,6 +390,7 @@ class MyRTP:
         global udpSocket
         udpSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         udpSocket.bind(('',portNum))
+        udpSocket.settimeout(7)
 
         # Give access to the global variables
         global globalAckNumber
@@ -450,7 +449,6 @@ class MyRTP:
 
         # Use a blocking UDP call to wait for the SYN+ACK to come back
         incomingMessage2 = udpSocket.recv(self.maxPacketLength)
-        udpSocket.settimeout(5)
 
         # Check to see if the packet is a SYN+ACK packet (indicated in 28th byte of header)
         if(incomingMessage2[28] == self.headerFlags[5] and checkSumOkay(incomingMessage)):
