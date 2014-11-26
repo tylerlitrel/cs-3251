@@ -270,12 +270,9 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire packet
-            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingAckPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
-            # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
-        
             #send fin
             incomingSeqNumber = int.from_bytes(incomingMessage[4:8], byteorder = 'big')
             incomingAckNumber = int.from_bytes(incomingMessage[8:12], byteorder = 'big')
@@ -289,20 +286,21 @@ class MyRTP:
             outgoingPacketLength = 32
 
             # Form the entire packet
-            outgoingPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
+            outgoingFinPacket = self.formPacket(outgoingSourcePort, outgoingDestinationPort,  outgoingSeqNumber,  
                 outgoingAckNumber, self.maxWindowSize, outgoingPacketLength, self.headerFlags[2], bytearray())
 
             while True:
+                # Send the ACK packet
+                udpSocket.sendto(outgoingAckPacket, (emuIpNumber,emuPortNumber))
                 # Send the packet
-                udpSocket.sendto(outgoingPacket, (emuIpNumber, emuPortNumber))
+                udpSocket.sendto(outgoingFinPacket, (emuIpNumber, emuPortNumber))
                 
                 # Wait for an ACK packet
-            
                 try:
                     incomingMessage = udpSocket.recv(self.maxPacketLength)
                 except:
                     incomingMessage = None
-                if incomingMessage == None:
+                if incomingMessage is None:
                     continue
                 if (incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
                     break
@@ -312,10 +310,8 @@ class MyRTP:
             canListen = False
             return
         else:
-            ''' edge case where fin packet is bad and we go in here anyways. will add while loop at top or incorporate this some how'''
             while(True):
                 outgoingPacketLength = 32
-
                 
                 globalAckNumber = globalAckNumber + len(incomingMessage) - 32
 
@@ -587,12 +583,6 @@ class MyRTP:
     def closeRTPSocket(self):
         # Send the FIN packet
         
-        '''  
-        ##
-        ## figure out where variables come from
-        ##
-        ##
-        '''
         # Give access to the global variables
         global globalAckNumber
         global globalSeqNumber
@@ -602,10 +592,19 @@ class MyRTP:
             globalAckNumber, self.maxWindowSize, 32, self.headerFlags[2], bytearray())
         
         # Send the FIN packet
-        udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+        while True:
+            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
-        # Wait for the reply to the FIN
-        incomingMessage = udpSocket.recv(self.maxPacketLength)
+            # Wait for the reply to the FIN
+            try:
+                incomingMessage = udpSocket.recv(self.maxPacketLength)
+            except:
+                incomingMessage = None
+
+            if incomingMessage is None:
+                continue
+            if checkSumOkay(incomingMessage) and (incomingMessage[28] == self.headerFlags[2] or incomingMessage[28] == self.headerFlags[1] or incomingMessage[28] == self.headerFlags[6]):
+                break
 
         # Check if the packet is a FIN
         if(incomingMessage[28] == self.headerFlags[2] and checkSumOkay(incomingMessage)):
@@ -621,23 +620,40 @@ class MyRTP:
 
             # Send the ACK packet
             print(outgoingPacket)
-            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+            while True:
+                udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
-            # Wait for an ACK
-            incomingMessage = udpSocket.recv(self.maxPacketLength)
-            if(incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
-                # Wait for a timeout period
-                time.sleep(5)
+                # Wait for an ACK
+                try:
+                    incomingMessage = udpSocket.recv(self.maxPacketLength)
+                except:
+                    incomingMessage = None
 
-                # Close the socket
-                canListen = False
-                udpSocket.close()
+                if incomingMessage is None:
+                    continue
+                if incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage):
+                    break
+
+            # Wait for a timeout period
+            time.sleep(5)
+
+            # Close the socket
+            canListen = False
+            udpSocket.close()
         # Check if the packet is an ACK
-        if(incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
+        elif(incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
             ## needs to wait for a fin to send an ack
-            incomingMessage = udpSocket.recv(self.maxPacketLength)
-            
-            #hfs need some wort of while loop in case we get a non fin. also we need this in many other places possibly
+            while True:
+                try:
+                    incomingMessage = udpSocket.recv(self.maxPacketLength)
+                except:
+                    incomingMessage = None
+
+                if incomingMessage is None:
+                    continue
+
+                if(incomingMessage[28] == self.headerFlags[2] and checkSumOkay(incomingMessage)):
+                    break
             
             if(incomingMessage[28] == self.headerFlags[2] and checkSumOkay(incomingMessage)):
                 # Retrieve the needed information from the incoming packet
@@ -649,8 +665,19 @@ class MyRTP:
                 outgoingPacket = self.formPacket(self.globalSourcePort, self.globalDestinationPort,  globalSeqNumber,  
                     globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
-                # Send the Ack attack packet
-                udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+                index = 1
+                while index < 4:
+                    index = index + 1
+                    try:
+                        incomingMessage = udpSocket.recv(self.maxPacketLength)
+                    except:
+                        incomingMessage = None
+                    if incomingMessage is None:
+                        continue
+                    # Check to see if the packet is a ACK packet (indicated in 28th byte of header)
+                    elif (incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage)):
+                        udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+                        index = 1
 
                 # Wait for a timeout period
                 time.sleep(5)
@@ -659,7 +686,7 @@ class MyRTP:
                 canListen = False
                 udpSocket.close()
         # Check if the packet is a FIN+ACK
-        if(incomingMessage[28] == self.headerFlags[6] and checkSumOkay(incomingMessage)):
+        elif(incomingMessage[28] == self.headerFlags[6] and checkSumOkay(incomingMessage)):
             # Send an ACK
             # Retrieve the needed information from the incoming packet
             globalSeqNumber = globalSeqNumber + 1
@@ -671,10 +698,20 @@ class MyRTP:
                 globalAckNumber, self.maxWindowSize,  outgoingPacketLength, self.headerFlags[1], bytearray())
 
             # Send the ACK packet
-            udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
+            while True:
+                udpSocket.sendto(outgoingPacket, (emuIpNumber,emuPortNumber))
 
-            # Wait for an ACK
-            incomingMessage = udpSocket.recv(self.maxPacketLength)
+                # Wait for an ACK
+                try:
+                    incomingMessage = udpSocket.recv(self.maxPacketLength)
+                except:
+                    incomingMessage = None
+
+                if incomingMessage is None:
+                    continue
+
+                if incomingMessage[28] == self.headerFlags[1] and checkSumOkay(incomingMessage):
+                    break
 
             # Wait for a timeout period
             time.sleep(5)
