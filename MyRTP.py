@@ -1,4 +1,6 @@
 # This file will contain all the logic necessary for the RTP protocol
+#Philip Litrel
+#Keegan Nesbitt
 
 import hashlib
 import math

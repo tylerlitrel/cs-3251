@@ -1,7 +1,7 @@
 # The server application for the File Transfer Application (FTA) portion of the assignment
 #
 # Author: Keegan Nesbitt
-# Last Modified: 11/13/2014
+# Last Modified: Philip Litrel
 # Course: CS 3251 
 
 # Import the file containing the functions for the RTP protocol and any other necessary modules
