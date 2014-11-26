@@ -3,7 +3,7 @@ Every statement about window size is left in for expansion purposes.
 It is not currently implemented.
 
 We added a flag, EOF. End of file. This marks the end of the transfer.
-It is the fifth flag bit. Reserved bits are not reduced by 1.
+It is the fifth flag bit. Reserved bits are reduced by 1.
 We found that it makes file transfer more reliable. 
 
 General Usage:
