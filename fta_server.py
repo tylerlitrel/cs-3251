@@ -76,18 +76,14 @@ def sendFile(command):
 def waitForCommands():
     # Get the command from the client
     command = socket.receiveRTP(800000)
-    print('received command from client')
 
     # Check to see what the command is
     if command is None:
-        print('connection was closed')
         global isConnected
         isConnected = False       
     elif command.decode('utf-8').split(' ')[0] == 'get':
-        print('retrieve file from server')
         sendFile(command)
     elif command.decode('utf-8').split(' ')[0] == 'post':
-        print('upload file to server')
         receiveFile(command)
     else:
         print('invalid command received')
@@ -102,12 +98,6 @@ def promptForInput():
         terminateServer()
     else:
         print('Not a valid command')
-    #except Exception as e:
-        #if str(e) == 'terminate':
-            #sys.exit()
-        #else:
-            # timeout
-            #return
 
 def waitForConnections():
     #try:
@@ -117,23 +107,9 @@ def waitForConnections():
         waitForCommands()   
     else:    
         isConnected = socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
-    #except:
-        # timeout
-        #return
-
-def doNothing(signum, frame):
-    raise Exception('timeout')
     
 initializeServer(netEmuPort, netEmuIP, serverPortNumber)
-#signal.signal(signal.SIGALRM, doNothing)
 
 while True:
     # Wait for a client to connect or send a command
-    #signal.alarm(5)
     waitForConnections()
-    #signal.alarm(0)
-
-    # Check for the user to input commands
-    #signal.alarm(5)
-    #userInput = promptForInput()
-    #signal.alarm(0)

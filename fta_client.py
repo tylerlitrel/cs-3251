@@ -16,9 +16,6 @@ def connect():
     socket = MyRTP.MyRTP()
     
     # Form a connection with the server
-    print(clientPortNumber)
-    print(netEmuIP)
-    print(netEmuPort)
     socket.connectRTP(clientPortNumber, netEmuIP, netEmuPort)
 
     # Print a confirmation to the user
@@ -28,7 +25,6 @@ def connect():
 def retrieveFile(command):
     # First tell the server that it needs to send a file
     socket.sendRTP(bytearray(command, 'utf-8'))
-    print('sent request for file to server')
 
     # Receive the file from the server
     fileByteArray = socket.receiveRTP(2000000000)
