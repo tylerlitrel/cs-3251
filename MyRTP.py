@@ -142,10 +142,7 @@ class MyRTP:
             return False
         # Use a blocking UDP call to wait for a SYN packet to arrive
         print('listening for connections')
-        try:
-            incomingMessage = udpSocket.recv(self.maxPacketLength)
-        except:
-            incomingMessage = None
+        incomingMessage = udpSocket.recv(self.maxPacketLength)
         print('got first packet')
         print(incomingMessage)
         # If the packet was a SYN packet, generate a random number for the CHALLENGE+ACK reply

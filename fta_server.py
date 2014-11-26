@@ -7,7 +7,7 @@
 # Import the file containing the functions for the RTP protocol and any other necessary modules
 import MyRTP
 import sys
-from threading import Timer
+import signal
 # Create a variable to contain a socket and other necessary variables
 socket = None
 windowSize = 100
@@ -45,8 +45,7 @@ def setWindowSize(newWindowSize):
 
 # This function will be used to gracefully shutdown the FTA-Server
 def terminateServer():
-    global socket
-    socket.closeRTPSocket()
+    raise Exception('terminate')
 
 # This function will be used to retrieve a file from the client
 def receiveFile(command):
@@ -91,37 +90,48 @@ def waitForCommands():
     else:
         print('invalid command received')
 
+def promptForInput():
+    try:
+        print('Enter a command for the FTA Server in the next 5 seconds:\n')
+        command = input()
+
+        # Check for the type of command input by the user
+        if command == 'terminate':
+            terminateServer()
+        else:
+            print('Not a valid command')
+    except Exception as e:
+        if str(e) == 'terminate':
+            sys.exit()
+        else:
+            # timeout
+            return
+
+def waitForConnections():
+    try:
+        global isConnected
+        if(isConnected):
+            # Once a client connects, wait for commands
+            waitForCommands()   
+        else:    
+            isConnected = socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
+    except:
+        # timeout
+        return
+
+def doNothing(signum, frame):
+    raise Exception('timeout')
     
 initializeServer(netEmuPort, netEmuIP, serverPortNumber)
-
-# Include some way to both check for the user input commands and checking for incoming connections
+signal.signal(signal.SIGALRM, doNothing)
 
 while True:
     # Check for the user to input commands
-    timeout = 5
-    t = Timer(timeout, print, ['Sorry, times up'])
-    t.start()
-    prompt = "You have %d seconds to choose the correct answer...\n" % timeout
-    userInput = input('Enter a command for the FTA Server:\n')
-    t.cancel()
-    
-    # Check for the type of command input by the user
-    command = userInput.split(' ')[0]
-    if command == 'terminate':
-        terminateServer()
-    elif command == 'window':
-        setWindowSize(userInput.split(' ')[1])
-    elif command == 'exit':
-        sys.exit()
-    else:
-        print('Not a valid command')
+    signal.alarm(5)
+    userInput = promptForInput()
+    signal.alarm(0)
 
-    # Wait for a client to connect to the server
-    print(serverPortNumber)
-    print(netEmuIP)
-    print(netEmuPort)
-    if(isConnected):
-        # Once a client connects, wait for commands
-        waitForCommands()   
-    else:    
-        isConnected = socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
+    # Wait for a client to connect or send a command
+    signal.alarm(5)
+    waitForConnections()
+    signal.alarm(0)
