@@ -80,7 +80,9 @@ def waitForCommands():
 
     # Check to see what the command is
     if command is None:
-        print('connection was closed')        
+        print('connection was closed')
+        global isConnected
+        isConnected = False       
     elif command.decode('utf-8').split(' ')[0] == 'get':
         print('retrieve file from server')
         sendFile(command)
@@ -91,47 +93,47 @@ def waitForCommands():
         print('invalid command received')
 
 def promptForInput():
-    try:
-        print('Enter a command for the FTA Server in the next 5 seconds:\n')
-        command = input()
+    #try:
+    print('Enter a command for the FTA Server in the next 5 seconds:\n')
+    command = input()
 
-        # Check for the type of command input by the user
-        if command == 'terminate':
-            terminateServer()
-        else:
-            print('Not a valid command')
-    except Exception as e:
-        if str(e) == 'terminate':
-            sys.exit()
-        else:
+    # Check for the type of command input by the user
+    if command == 'terminate':
+        terminateServer()
+    else:
+        print('Not a valid command')
+    #except Exception as e:
+        #if str(e) == 'terminate':
+            #sys.exit()
+        #else:
             # timeout
-            return
+            #return
 
 def waitForConnections():
-    try:
-        global isConnected
-        if(isConnected):
-            # Once a client connects, wait for commands
-            waitForCommands()   
-        else:    
-            isConnected = socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
-    except:
+    #try:
+    global isConnected
+    if(isConnected):
+        # Once a client connects, wait for commands
+        waitForCommands()   
+    else:    
+        isConnected = socket.acceptRTPConnection(serverPortNumber, netEmuIP, netEmuPort)
+    #except:
         # timeout
-        return
+        #return
 
 def doNothing(signum, frame):
     raise Exception('timeout')
     
 initializeServer(netEmuPort, netEmuIP, serverPortNumber)
-signal.signal(signal.SIGALRM, doNothing)
+#signal.signal(signal.SIGALRM, doNothing)
 
 while True:
-    # Check for the user to input commands
-    signal.alarm(5)
-    userInput = promptForInput()
-    signal.alarm(0)
-
     # Wait for a client to connect or send a command
-    signal.alarm(5)
+    #signal.alarm(5)
     waitForConnections()
-    signal.alarm(0)
+    #signal.alarm(0)
+
+    # Check for the user to input commands
+    #signal.alarm(5)
+    #userInput = promptForInput()
+    #signal.alarm(0)
